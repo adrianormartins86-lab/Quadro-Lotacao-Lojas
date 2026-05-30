@@ -96,25 +96,24 @@ if "logado" not in st.session_state:
 # 🔐 2. INTERFACE E CONTROLE DA TELA DE LOGIN (CENTRALIZADA)
 # =========================================================
 if not st.session_state["logado"]:
-    # Espaçamento superior para descer um pouco o bloco de login
     st.markdown("<br><br>", unsafe_allow_html=True)
     
-    # Criação da estrutura de colunas para centralização [Esquerda, Centro, Direita]
-    col_esq, col_centro, col_dir = st.columns([1, 1.5, 1])
+    # Estrutura principal para centralizar o formulário na tela
+    col_esq, col_centro, col_dir = st.columns([1, 1.4, 1])
     
     with col_centro:
-        # Injeção de HTML/CSS Flexbox para colar o título do lado do passarinho e centralizar o conjunto
+        # Se a logo existir, criamos colunas internas muito próximas para alinhar a imagem e o texto nativamente
         if os.path.exists("passaro_logo.png"):
-            st.markdown("""
-                <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px;">
-                    <img src="app/static/passaro_logo.png" width="90" style="object-fit: contain;">
-                    <h1 style="margin: 0; font-size: 32px; white-space: nowrap;">Molicenter - QL</h1>
-                </div>
-            """, unsafe_allow_html=True)
+            # Uma coluna fina para a logo e outra para o texto (espaço de gap controlado)
+            col_logo_vaga, col_texto_vaga = st.columns([0.35, 1], vertical_alignment="center")
+            with col_logo_vaga:
+                st.image("passaro_logo.png", width=85)
+            with col_texto_vaga:
+                st.markdown("<h1 style='margin: 0; padding-left: 0; font-size: 34px;'>Molicenter - QL</h1>", unsafe_allow_html=True)
         else:
             st.markdown("<h1 style='text-align: center;'>Molicenter - QL</h1>", unsafe_allow_html=True)
         
-        st.markdown("<h5 style='text-align: center; color: #888888; margin-top: -10px;'>Quadro de Lotação</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='text-align: center; color: #888888; margin-top: 5px;'>Quadro de Lotação</h5>", unsafe_allow_html=True)
         st.markdown("<hr style='margin-top: 10px; margin-bottom: 25px;'>", unsafe_allow_html=True)
         
         # Inputs organizados dentro do bloco centralizado
