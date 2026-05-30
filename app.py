@@ -35,7 +35,21 @@ USUARIOS_DB = {
     "gerente8@molicenter.com.br": {"senha": "moli1234", "perfil": "gerente", "loja_fixa": 8},
 }
 
-# GERENCIAMENTO DE ESTADO DO LOGIN (Session State)
+# LISTAS DE OPÇÕES PADRONIZADAS
+OPCOES_SEXO = ["-", "Indiferente", "Masculino", "Feminino"]
+MAPA_SEXO_SIGLA = {"-": "-", "Indiferente": "I", "Masculino": "M", "Feminino": "F"}
+MAPA_SIGLA_SEXO = {"-": "-", "I": "Indiferente", "M": "Masculino", "F": "Feminino"}
+
+OPCOES_MOTIVO = ["-", "Aumento QL", "Função Nova", "Mudança Setor", "Substituição", "Transferência"]
+
+OPCOES_STATUS_RH = [
+    "-", "Requisição atendida", "Aguardando resposta Candidato", "Cancelado", 
+    "Divulgação da vaga", "Documentação Admissão", "Entrevista Loja", "Entrevista RH", 
+    "Exame Admissional", "Não Validado pelo gerente", "Previsão de Início", 
+    "Triagem de Curriculuns", "Validado pelo gerente", "Desistencia Candidato"
+]
+
+# GERENCIAMENTO DE ESTADO DO LOGIN
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
     st.session_state["usuario"] = ""
@@ -75,7 +89,6 @@ def formatar_data_br(valor):
     if val_str in ["nan", "None", "", "-", "0"]:
         return "-"
     try:
-        # Tenta tratar formatos ISO vindo do Sheets (ex: 2026-05-30T12:00:00.000Z ou similar)
         if "T" in val_str:
             val_str = val_str.split("T")[0]
         dt = pd.to_datetime(val_str)
@@ -114,11 +127,16 @@ def carregar_dados_completos():
                 idx_list = df[(df['Nome'] == nome_func) & (df['Loja'] == loja_reg)].index
                 if len(idx_list) > 0:
                     idx = idx_list[0]
+                    
+                    # Converte a sigla salva no banco para o texto amigável na tabela
+                    sigla_sexo = str(registro.get('Sexo', '-')).strip()
+                    sexo_exibicao = MAPA_SIGLA_SEXO.get(sigla_sexo, sigla_sexo)
+                    
                     df.at[idx, 'Observação'] = registro.get('Observação', '-')
                     df.at[idx, 'Data Abertura'] = formatar_data_br(registro.get('Data Abertura', '-'))
                     df.at[idx, 'Responsável'] = registro.get('Responsável', '-')
                     df.at[idx, 'Horário Contrato'] = registro.get('Horário Contrato', '-')
-                    df.at[idx, 'Sexo'] = registro.get('Sexo', '-')
+                    df.at[idx, 'Sexo'] = sexo_exibicao
                     df.at[idx, 'Motivo'] = registro.get('Motivo', '-')
                     df.at[idx, 'Status RH'] = registro.get('Status RH', '-')
                     df.at[idx, 'Candidato'] = registro.get('Candidato', '-')
@@ -149,7 +167,7 @@ try:
     df_loja = df_bruto[df_bruto['Loja'] == loja_selecionada].copy()
 
     # =========================================================
-    # 🛠️ BARRA LATERAL (SIDEBAR) - FORMULÁRIO COM SELETORES DE DATA
+    # 🛠️ BARRA LATERAL (SIDEBAR) - FORMULÁRIO OPERACIONAL
     # =========================================================
     st.sidebar.header("📝 Alimentar Informações")
     funcionarios_loja = sorted(df_loja['Nome'].dropna().unique())
@@ -170,46 +188,52 @@ try:
         # 🔹 BLOCO DO GERENTE
         st.sidebar.subheader("🔹 Gerente")
         if perfil in ["analista", "rh", "supervisor", "gerente"]:
-            # Conversão inteligente para o calendário reconhecer a data atual ou carregar padrão
+            # Data Abertura (Calendário)
             data_ab_atual = str(dados_func['Data Abertura']).strip()
             try:
                 data_ab_default = datetime.strptime(data_ab_atual, "%d/%m/%Y").date() if data_ab_atual != "-" else date.today()
             except:
                 data_ab_default = date.today()
-            
-            # Seletor em formato de Calendário Oficial
             nova_data_ab_col = st.sidebar.date_input("Data Abertura:", value=data_ab_default, format="DD/MM/YYYY")
             nova_data_abertura = nova_data_ab_col.strftime("%d/%m/%Y")
             
             novo_responsavel = st.sidebar.text_input("Responsável:", value=str(dados_func['Responsável']) if str(dados_func['Responsável']) != "-" else "")
             novo_horario_contrato = st.sidebar.text_input("Horário Contrato:", value=str(dados_func['Horário Contrato']) if str(dados_func['Horário Contrato']) != "-" else "")
             
-            sexo_atual = str(dados_func['Sexo']).strip().upper()
-            sexo_index = 0
-            if sexo_atual == "M": sexo_index = 1
-            elif sexo_atual == "F": sexo_index = 2
-            novo_sexo = st.sidebar.selectbox("Sexo:", ["-", "M", "F"], index=sexo_index)
-            novo_motivo = st.sidebar.text_input("Motivo:", value=str(dados_func['Motivo']) if str(dados_func['Motivo']) != "-" else "")
+            # Sexo (Seletor Inteligente com Opções Amigáveis)
+            sexo_exibido_atual = str(dados_func['Sexo']).strip()
+            idx_sexo = OPCOES_SEXO.index(sexo_exibido_atual) if sexo_exibido_atual in OPCOES_SEXO else 0
+            texto_sexo_selecionado = st.sidebar.selectbox("Sexo:", OPCOES_SEXO, index=idx_sexo)
+            novo_sexo = MAPA_SEXO_SIGLA.get(texto_sexo_selecionado, "-") # Envia sigla (I, M, F) para o banco
+            
+            # Motivo (Seletor Inteligente com Opções)
+            motivo_atual = str(dados_func['Motivo']).strip()
+            idx_motivo = OPCOES_MOTIVO.index(motivo_atual) if motivo_atual in OPCOES_MOTIVO else 0
+            novo_motivo = st.sidebar.selectbox("Motivo:", OPCOES_MOTIVO, index=idx_motivo)
         else:
             nova_data_abertura = st.sidebar.text_input("Data Abertura:", value=str(dados_func['Data Abertura']), disabled=True)
             novo_responsavel = st.sidebar.text_input("Responsável:", value=str(dados_func['Responsável']), disabled=True)
             novo_horario_contrato = st.sidebar.text_input("Horário Contrato:", value=str(dados_func['Horário Contrato']), disabled=True)
-            novo_sexo = st.sidebar.text_input("Sexo:", value=str(dados_func['Sexo']), disabled=True)
+            novo_sexo_exibido = st.sidebar.text_input("Sexo:", value=str(dados_func['Sexo']), disabled=True)
+            novo_sexo = MAPA_SEXO_SIGLA.get(novo_sexo_exibido, "-")
             novo_motivo = st.sidebar.text_input("Motivo:", value=str(dados_func['Motivo']), disabled=True)
         
         # 🔺 BLOCO DO RH
         st.sidebar.subheader("🔺 Recursos Humanos (RH)")
         if perfil in ["analista", "rh"]:
-            novo_status_rh = st.sidebar.text_input("Status RH:", value=str(dados_func['Status RH']) if str(dados_func['Status RH']) != "-" else "")
+            # Status RH (Seletor de Opções Solicitadas)
+            status_atual = str(dados_func['Status RH']).strip()
+            idx_status = OPCOES_STATUS_RH.index(status_atual) if status_atual in OPCOES_STATUS_RH else 0
+            novo_status_rh = st.sidebar.selectbox("Status RH:", OPCOES_STATUS_RH, index=idx_status)
+            
             novo_candidato = st.sidebar.text_input("Candidato:", value=str(dados_func['Candidato']) if str(dados_func['Candidato']) != "-" else "")
             
-            # Calendário para o RH também!
+            # Data Admissão (Calendário Oficial Novo)
             data_ad_atual = str(dados_func['Data Admissão']).strip()
             try:
                 data_ad_default = datetime.strptime(data_ad_atual, "%d/%m/%Y").date() if data_ad_atual != "-" else date.today()
             except:
                 data_ad_default = date.today()
-            
             nova_data_ad_col = st.sidebar.date_input("Data Admissão:", value=data_ad_default, format="DD/MM/YYYY")
             nova_data_admissao = nova_data_ad_col.strftime("%d/%m/%Y")
         else:
