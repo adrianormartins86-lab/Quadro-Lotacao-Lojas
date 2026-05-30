@@ -5,16 +5,40 @@ import json
 from datetime import datetime, date
 import os
 
-# 1. CONFIGURAÇÃO DA PÁGINA (Com o novo título e o passarinho no ícone da aba)
+# =========================================================
+# 🛠️ 1. CONFIGURAÇÕES INICIAIS E FUNÇÕES AUXILIARES VISUAIS
+# =========================================================
+
+# Configuração da Página (Título oficial e ícone do passarinho na aba)
 st.set_page_config(
     page_title="Molicenter - QL (Quadro de Lotação)", 
     page_icon="passaro_logo.png" if os.path.exists("passaro_logo.png") else "📊",
     layout="wide"
 )
 
-URL_API_SHEETS = "https://script.google.com/macros/s/AKfycbz_OA0O8zS-rMuuZEYu5rUeZow3lEZt-GcGYUWUbX4kiaRwDoQ9vZeoknsF5K-zFZvn/exec"
+# FUNÇÃO CONDICIONAL DE CORES DO STATUS (Precisa ficar no topo)
+def obter_classe_status(status):
+    status_upper = str(status).strip().upper()
+    if "ATIVO" in status_upper or "FÉRIAS" in status_upper or "FERIAS" in status_upper:
+        return 'class="status-verde"'
+    elif "AFASTAMENTO" in status_upper or "AFASTADO" in status_upper or "DEMITIDO" in status_upper:
+        return 'class="status-vermelho"'
+    return ""
 
-# Estilo global das tabelas em HTML
+# FUNÇÃO DE FORMATAÇÃO DE DATAS PARA EXIBIÇÃO NA TABELA
+def formatar_data_br(valor):
+    val_str = str(valor).strip()
+    if val_str in ["nan", "None", "", "-", "0"]:
+        return "-"
+    try:
+        if "T" in val_str:
+            val_str = val_str.split("T")[0]
+        dt = pd.to_datetime(val_str)
+        return dt.strftime("%d/%m/%Y")
+    except:
+        return val_str
+
+# Estilo global das tabelas em HTML (Injeção de CSS para travar larguras e centralizar status)
 st.markdown("""
     <style>
     .tabela-container { width: 100%; overflow-x: auto; margin-bottom: 25px; }
@@ -23,13 +47,16 @@ st.markdown("""
     .ql-table tr:nth-child(even) { background-color: #1e1e1e; }
     .ql-table tr:nth-child(odd) { background-color: #121212; }
     
-    /* Classes corrigidas para centralizar o texto junto com a cor condicional */
+    /* Cores dos cabeçalhos aplicadas diretamente nas células do Status */
     .status-verde { background-color: #15803d !important; color: white !important; font-weight: bold !important; text-align: center !important; }
     .status-vermelho { background-color: #b91c1c !important; color: white !important; font-weight: bold !important; text-align: center !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# DICIONÁRIO DE USUÁRIOS, SENHAS E PERMISSÕES (Matriz de Perfil)
+# URL DO SEU MOTOR GOOGLE APPS SCRIPT
+URL_API_SHEETS = "https://script.google.com/macros/s/AKfycbz_OA0O8zS-rMuuZEYu5rUeZow3lEZt-GcGYUWUbX4kiaRwDoQ9vZeoknsF5K-zFZvn/exec"
+
+# DICIONÁRIO DE USUÁRIOS, SENHAS E MATRIZ DE PERFIL
 USUARIOS_DB = {
     "analista@molicenter.com.br": {"senha": "moli1234", "perfil": "analista", "loja_fixa": None},
     "rh1@molicenter.com.br": {"senha": "moli1234", "perfil": "rh", "loja_fixa": None},
@@ -44,7 +71,7 @@ USUARIOS_DB = {
     "gerente8@molicenter.com.br": {"senha": "moli1234", "perfil": "gerente", "loja_fixa": 8},
 }
 
-# LISTAS DE OPÇÕES PADRONIZADAS
+# OPCOES DE COMPOSIÇÃO DOS DROPDOWNS NA LATERAL
 OPCOES_SEXO = ["-", "Indiferente", "Masculino", "Feminino"]
 MAPA_SEXO_SIGLA = {"-": "-", "Indiferente": "I", "Masculino": "M", "Feminino": "F"}
 MAPA_SIGLA_SEXO = {"-": "-", "I": "Indiferente", "M": "Masculino", "F": "Feminino"}
@@ -58,14 +85,16 @@ OPCOES_STATUS_RH = [
     "Triagem de Curriculuns", "Validado pelo gerente", "Desistencia Candidato"
 ]
 
-# GERENCIAMENTO DE ESTADO DO LOGIN
+# Inicializa as variáveis de sessão de controle de acesso
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
     st.session_state["usuario"] = ""
     st.session_state["perfil"] = ""
     st.session_state["loja_fixa"] = None
 
-# INTERFACE DA TELA DE LOGIN
+# =========================================================
+# 🔐 2. INTERFACE E CONTROLE DA TELA DE LOGIN
+# =========================================================
 if not st.session_state["logado"]:
     col_logo_top, col_title_top = st.columns([0.4, 2.5], vertical_alignment="center")
     with col_logo_top:
@@ -98,29 +127,9 @@ if st.sidebar.button("🚪 Sair do Sistema"):
     st.session_state["logado"] = False
     st.rerun()
 
-# FUNÇÃO DE FORMATAÇÃO DE DATAS PARA EXIBIÇÃO NA TABELA
-def formatar_data_br(valor):
-    val_str = str(valor).strip()
-    if val_str in ["nan", "None", "", "-", "0"]:
-        return "-"
-    try:
-        if "T" in val_str:
-            val_str = val_str.split("T")[0]
-        dt = pd.to_datetime(val_str)
-        return dt.strftime("%d/%m/%Y")
-    except:
-        return val_str
-
-# FUNÇÃO AUXILIAR PARA RETORNAR A CLASSE CSS DO STATUS CENTRALIZADO
-def obtener_classe_status(status):
-    status_upper = str(status).strip().upper()
-    if "ATIVO" in status_upper or "FÉRIAS" in status_upper or "FERIAS" in status_upper:
-        return 'class="status-verde"'
-    elif "AFASTAMENTO" in status_upper or "AFASTADO" in status_upper or "DEMITIDO" in status_upper:
-        return 'class="status-vermelho"'
-    return ""
-
-# 3. FUNÇÃO HÍBRIDA DE CARGA DE DADOS
+# =========================================================
+# 📊 3. FUNÇÃO DE CARGA E PROCESSO CRUZADO DE DADOS
+# =========================================================
 @st.cache_data(ttl="0d")
 def carregar_dados_completos():
     df = pd.read_excel("Banco QL.xlsx", sheet_name="Banco")
@@ -175,6 +184,7 @@ try:
     perfil = st.session_state["perfil"]
     loja_fixa = st.session_state["loja_fixa"]
 
+    # Cabeçalho Interno Principal
     col_main_logo, col_main_title = st.columns([0.4, 2.5], vertical_alignment="center")
     with col_main_logo:
         if os.path.exists("passaro_logo.png"):
@@ -186,6 +196,7 @@ try:
     st.sidebar.markdown(f"**Nível:** `{perfil.upper()}`")
     st.markdown("---")
 
+    # Filtro inteligente de travas por Loja
     if loja_fixa is not None:
         loja_selecionada = loja_fixa
         st.info(f"🏪 Modo de Visualização Restrito: **Loja {loja_selecionada:02d}**")
@@ -196,7 +207,7 @@ try:
     df_loja = df_bruto[df_bruto['Loja'] == loja_selecionada].copy()
 
     # =========================================================
-    # 🛠️ BARRA LATERAL (SIDEBAR) - FORMULÁRIO OPERACIONAL
+    # 🛠️ 4. BARRA LATERAL (SIDEBAR) - CONDIÇÕES DE DIGITAÇÃO
     # =========================================================
     st.sidebar.header("📝 Alimentar Informações")
     funcionarios_loja = sorted(df_loja['Nome'].dropna().unique())
@@ -206,6 +217,7 @@ try:
         dados_func = df_loja[df_loja['Nome'] == colaborador_selecionado].iloc[0]
         st.sidebar.markdown("---")
         
+        # 🔸 SUPERVISOR
         st.sidebar.subheader("🔸 Supervisor")
         if perfil in ["analista", "rh", "supervisor"]:
             nova_obs = st.sidebar.text_area("Observação:", value=str(dados_func['Observação']) if str(dados_func['Observação']) != "-" else "")
@@ -213,6 +225,7 @@ try:
             st.sidebar.text_input("Observação:", value=str(dados_func['Observação']), disabled=True)
             nova_obs = str(dados_func['Observação'])
         
+        # 🔹 GERENTE
         st.sidebar.subheader("🔹 Gerente")
         if perfil in ["analista", "rh", "supervisor", "gerente"]:
             data_ab_atual = str(dados_func['Data Abertura']).strip()
@@ -242,6 +255,7 @@ try:
             novo_sexo = MAPA_SEXO_SIGLA.get(novo_sexo_exibido, "-")
             novo_motivo = st.sidebar.text_input("Motivo:", value=str(dados_func['Motivo']), disabled=True)
         
+        # 🔺 RH
         st.sidebar.subheader("🔺 Recursos Humanos (RH)")
         if perfil in ["analista", "rh"]:
             status_atual = str(dados_func['Status RH']).strip()
@@ -262,6 +276,7 @@ try:
             novo_candidato = st.sidebar.text_input("Candidato:", value=str(dados_func['Candidato']), disabled=True)
             nova_data_admissao = st.sidebar.text_input("Data Admissão:", value=str(dados_func['Data Admissão']), disabled=True)
         
+        # GATILHO SALVAR
         if st.sidebar.button("💾 Salvar Alterações", use_container_width=True):
             payload = {
                 "Loja": int(loja_selecionada),
@@ -291,7 +306,7 @@ try:
                 st.sidebar.error(f"Erro de conexão: {e}")
 
     # =========================================================
-    # 🏪 INDICADORES E PAINEL VISUAL (TELA PRINCIPAL)
+    # 🏪 5. INDICADORES E MATRIZ VISUAL CENTRAL (TABELAS HTML)
     # =========================================================
     st.markdown(f"### 🏪 Quadro de Funcionários - Loja {int(loja_selecionada):02d}")
 
@@ -357,11 +372,11 @@ try:
                 for _, row in df_filtrado.iterrows():
                     html_tabela += "<tr>"
                     
-                    # Primeira célula (Status) com cor condicional e texto centralizado pelo CSS
+                    # 🎨 Injeta dinamicamente a cor condicional com texto centralizado no Status
                     classe_status = obter_classe_status(row['Situação'])
                     html_tabela += f"<td {classe_status}>{row['Situação']}</td>"
                     
-                    # Demais colunas alinhadas normalmente em linha única
+                    # Renderiza o restante dos dados lineares normalmente
                     for col_nome in row.index[1:]:
                         html_tabela += f"<td>{row[col_nome]}</td>"
                         
