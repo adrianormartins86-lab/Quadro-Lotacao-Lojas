@@ -76,7 +76,7 @@ if not st.session_state["logado"]:
                 st.success("Acesso concedido!")
                 st.rerun()
             else:
-                st.error("Usuário ou senha incorretos. Tente novamente.")
+                st.error("Usuários ou senha incorretos. Tente novamente.")
     st.stop()
 
 if st.sidebar.button("🚪 Sair do Sistema"):
@@ -300,32 +300,30 @@ try:
                     'Status RH', 'Candidato', 'Data Admissão'
                 ]]
                 
-                # HTML CUSTOMIZADO COM AS SUB-CORES COMBINANDO COM O DONO
+                # HTML ATUALIZADO COM OS TEXTOS DO SUB-CABEÇALHO CENTRALIZADOS
                 html_tabela = f"""
                 <div class="tabela-container">
                     <table class="ql-table">
                         <thead>
-                            <!-- LINHA 1: DONOS DO BLOCO -->
                             <tr>
                                 <th colspan="3" style="background-color: #1c3d5a; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: ANALISTA</th>
                                 <th colspan="1" style="background-color: #d97706; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: SUPERVISOR</th>
                                 <th colspan="5" style="background-color: #15803d; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: GERENTE</th>
                                 <th colspan="3" style="background-color: #b91c1c; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: RH</th>
                             </tr>
-                            <!-- LINHA 2: COLUNAS SEGUINDO AS MESMAS CORES DO TOP DE FORMA SUAVE -->
                             <tr style="color: #ffffff; font-weight: bold;">
-                                <th style="background-color: #244e73; border-top: none;">Status</th>
-                                <th style="background-color: #244e73; border-top: none;">Nome do Colaborador</th>
-                                <th style="background-color: #244e73; border-top: none;">Horário Sistema</th>
-                                <th style="background-color: #b36205; border-top: none;">Observação</th>
-                                <th style="background-color: #116631; border-top: none;">Data Abertura</th>
-                                <th style="background-color: #116631; border-top: none;">Responsável</th>
-                                <th style="background-color: #116631; border-top: none;">Horário Contrato</th>
-                                <th style="background-color: #116631; border-top: none;">Sexo</th>
-                                <th style="background-color: #116631; border-top: none;">Motivo</th>
-                                <th style="background-color: #941616; border-top: none;">Status RH</th>
-                                <th style="background-color: #941616; border-top: none;">Candidato</th>
-                                <th style="background-color: #941616; border-top: none;">Data Admissão</th>
+                                <th style="background-color: #244e73; border-top: none; text-align: center;">Status</th>
+                                <th style="background-color: #244e73; border-top: none; text-align: center;">Nome do Colaborador</th>
+                                <th style="background-color: #244e73; border-top: none; text-align: center;">Horário Sistema</th>
+                                <th style="background-color: #b36205; border-top: none; text-align: center;">Observação</th>
+                                <th style="background-color: #116631; border-top: none; text-align: center;">Data Abertura</th>
+                                <th style="background-color: #116631; border-top: none; text-align: center;">Responsável</th>
+                                <th style="background-color: #116631; border-top: none; text-align: center;">Horário Contrato</th>
+                                <th style="background-color: #116631; border-top: none; text-align: center;">Sexo</th>
+                                <th style="background-color: #116631; border-top: none; text-align: center;">Motivo</th>
+                                <th style="background-color: #941616; border-top: none; text-align: center;">Status RH</th>
+                                <th style="background-color: #941616; border-top: none; text-align: center;">Candidato</th>
+                                <th style="background-color: #941616; border-top: none; text-align: center;">Data Admissão</th>
                             </tr>
                         </thead>
                         <tbody>
