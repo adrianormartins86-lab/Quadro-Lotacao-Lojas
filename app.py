@@ -15,7 +15,7 @@ st.set_page_config(
     layout="wide"
 )
 
-def obter_classe_status(status):
+def obtener_classe_status(status):
     status_upper = str(status).strip().upper()
     if "ATIVO" in status_upper or "FÉRIAS" in status_upper or "FERIAS" in status_upper:
         return 'class="status-verde"'
@@ -72,24 +72,25 @@ if "logado" not in st.session_state:
     st.session_state["loja_fixa"] = None
 
 # =========================================================
-# 🔐 2. INTERFACE DA TELA DE LOGIN (COMPENSAÇÃO DE ZOOM)
+# 🔐 2. INTERFACE DA TELA DE LOGIN (FIXADO EM ESCALA DE 80%)
 # =========================================================
 if not st.session_state["logado"]:
-    # Forçamos o contêiner a se expandir fisicamente caso o navegador esteja em 67%
     st.markdown("""
         <style>
-        /* Engorda o bloco do login para parecer 100% mesmo se o navegador estiver em zoom baixo */
+        /* Emula a proporção exata e confortável do zoom de 80% do navegador */
         [data-testid="stApp"] {
-            zoom: 1.25 !important; /* Multiplicador visual para dar ganho de escala */
+            zoom: 0.85 !important; 
         }
+        /* Define a largura do bloco central de login no esquadro ideal */
         [data-testid="stColumn"] {
-            max-width: 460px !important;
+            max-width: 440px !important;
             margin: 0 auto !important;
         }
-        .stTextInput label, .stButton button { font-size: 15px !important; }
-        h1 { font-size: 32px !important; }
+        /* Ajuste fino nas fontes nativas dos inputs de e-mail/senha */
+        .stTextInput label { font-size: 14px !important; }
+        h1 { font-size: 34px !important; font-weight: bold; }
         </style>
-        <br><br>
+        <br><br><br>
     """, unsafe_allow_html=True)
     
     _, col_centro, _ = st.columns([0.1, 9.8, 0.1])
@@ -104,7 +105,7 @@ if not st.session_state["logado"]:
         else:
             st.markdown("<h1 style='text-align: center;'>Molicenter - QL</h1>", unsafe_allow_html=True)
         
-        st.markdown("<h5 style='text-align: center; color: #888888; margin-top: 5px;'>Quadro de Lotação</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='text-align: center; color: #888888; margin-top: 5px; font-size: 15px;'>Quadro de Lotação</h5>", unsafe_allow_html=True)
         st.markdown("<hr style='margin-top: 10px; margin-bottom: 25px;'>", unsafe_allow_html=True)
         
         user_input = st.text_input("E-mail corporativo:")
@@ -125,11 +126,11 @@ if not st.session_state["logado"]:
     st.stop()
 
 # =========================================================
-# 📊 3. CSS DO DASHBOARD (MULA NATIVAMENTE O ZOOM DE 67%)
+# 📊 3. CSS DO DASHBOARD (COMPACTAÇÃO TIPO ZOOM 67%)
 # =========================================================
 st.markdown("""
     <style>
-    /* Compactação cirúrgica da tabela para caber na horizontal sem quebrar linhas */
+    /* Compactação milimétrica da tabela para simular 67% de zoom e evitar quebras horizontais */
     .tabela-container { width: 100%; overflow-x: auto; margin-bottom: 25px; }
     .ql-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 11.5px; color: #ffffff; }
     .ql-table th, .ql-table td { border: 1px solid #444444; padding: 5px 8px; text-align: left; white-space: nowrap; }
@@ -139,7 +140,7 @@ st.markdown("""
     .status-verde { background-color: #15803d !important; color: white !important; font-weight: bold !important; text-align: center !important; }
     .status-vermelho { background-color: #b91c1c !important; color: white !important; font-weight: bold !important; text-align: center !important; }
     
-    /* Remove as margens vazias laterais padrão do Streamlit para esticar a tela cheia */
+    /* Zera as margens laterais do Streamlit para aproveitar toda a largura útil da tela */
     [data-testid="stAppViewBlockContainer"] { 
         padding-left: 1.5rem !important; 
         padding-right: 1.5rem !important; 
@@ -154,7 +155,7 @@ if st.sidebar.button("🚪 Sair do Sistema"):
     st.rerun()
 
 # =========================================================
-# 📊 4. CARGA DE DADOS HÍBRIDA (PROCESSO COMPLETO)
+# 📊 4. CARGA DE DADOS HÍBRIDA COM HISTÓRICO ANTI-PERDA
 # =========================================================
 @st.cache_data(ttl="0d")
 def carregar_dados_completos():
@@ -234,8 +235,8 @@ def carregar_dados_completos():
                     }
                     linhas_historico.append(linha_órfã)
             
-            if lines_historico := linhas_historico:
-                df_historico = pd.DataFrame(lines_historico)
+            if linhas_historico:
+                df_historico = pd.DataFrame(linhas_historico)
                 df = pd.concat([df, df_historico], ignore_index=True)
                 
     except:
