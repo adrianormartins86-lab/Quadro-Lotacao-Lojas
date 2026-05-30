@@ -9,14 +9,12 @@ import os
 # 🛠️ 1. CONFIGURAÇÕES INICIAIS E FUNÇÕES AUXILIARES VISUAIS
 # =========================================================
 
-# Configuração da Página (Título oficial e ícone do passarinho na aba)
 st.set_page_config(
     page_title="Molicenter - QL (Quadro de Lotação)", 
     page_icon="passaro_logo.png" if os.path.exists("passaro_logo.png") else "📊",
     layout="wide"
 )
 
-# FUNÇÃO CONDICIONAL DE CORES DO STATUS
 def obter_classe_status(status):
     status_upper = str(status).strip().upper()
     if "ATIVO" in status_upper or "FÉRIAS" in status_upper or "FERIAS" in status_upper:
@@ -25,7 +23,6 @@ def obter_classe_status(status):
         return 'class="status-vermelho"'
     return ""
 
-# FUNÇÃO DE FORMATAÇÃO DE DATAS PARA EXIBIÇÃO NA TABELA
 def formatar_data_br(valor):
     val_str = str(valor).strip()
     if val_str in ["nan", "None", "", "-", "0"]:
@@ -38,10 +35,9 @@ def formatar_data_br(valor):
     except:
         return val_str
 
-# URL DO SEU MOTOR GOOGLE APPS SCRIPT
 URL_API_SHEETS = "https://script.google.com/macros/s/AKfycbz_OA0O8zS-rMuuZEYu5rUeZow3lEZt-GcGYUWUbX4kiaRwDoQ9vZeoknsF5K-zFZvn/exec"
 
-# DICIONÁRIO DE USUÁRIOS, SENHAS E MATRIZ DE PERFIL
+# MATRIZ DE PERFIL E USUÁRIOS
 USUARIOS_DB = {
     "analista@molicenter.com.br": {"senha": "moli1234", "perfil": "analista", "loja_fixa": None},
     "rh1@molicenter.com.br": {"senha": "moli1234", "perfil": "rh", "loja_fixa": None},
@@ -56,7 +52,6 @@ USUARIOS_DB = {
     "gerente8@molicenter.com.br": {"senha": "moli1234", "perfil": "gerente", "loja_fixa": 8},
 }
 
-# OPCOES DE COMPOSIÇÃO DOS DROPDOWNS NA LATERAL
 OPCOES_SEXO = ["-", "Indiferente", "Masculino", "Feminino"]
 MAPA_SEXO_SIGLA = {"-": "-", "Indiferente": "I", "Masculino": "M", "Feminino": "F"}
 MAPA_SIGLA_SEXO = {"-": "-", "I": "Indiferente", "M": "Masculino", "F": "Feminino"}
@@ -70,7 +65,6 @@ OPCOES_STATUS_RH = [
     "Triagem de Curriculuns", "Validado pelo gerente", "Desistencia Candidato"
 ]
 
-# Inicializa as variáveis de sessão de controle de acesso
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
     st.session_state["usuario"] = ""
@@ -78,24 +72,26 @@ if "logado" not in st.session_state:
     st.session_state["loja_fixa"] = None
 
 # =========================================================
-# 🔐 2. INTERFACE E CONTROLE DA TELA DE LOGIN (OTIMIZADA)
+# 🔐 2. INTERFACE DA TELA DE LOGIN (COMPENSAÇÃO DE ZOOM)
 # =========================================================
 if not st.session_state["logado"]:
-    # CSS dinâmico específico para a Tela de Login (Garante tamanho ideal independente do zoom)
+    # Forçamos o contêiner a se expandir fisicamente caso o navegador esteja em 67%
     st.markdown("""
         <style>
-        /* Trava o formulário de login em uma largura confortável no centro */
+        /* Engorda o bloco do login para parecer 100% mesmo se o navegador estiver em zoom baixo */
+        [data-testid="stApp"] {
+            zoom: 1.25 !important; /* Multiplicador visual para dar ganho de escala */
+        }
         [data-testid="stColumn"] {
             max-width: 460px !important;
             margin: 0 auto !important;
         }
-        /* Ajusta o espaçamento do título do login */
-        h1 { font-size: 32px !important; text-align: left !important; }
+        .stTextInput label, .stButton button { font-size: 15px !important; }
+        h1 { font-size: 32px !important; }
         </style>
         <br><br>
     """, unsafe_allow_html=True)
     
-    # Coluna única centralizada controlada estritamente pelo CSS acima
     _, col_centro, _ = st.columns([0.1, 9.8, 0.1])
     
     with col_centro:
@@ -129,24 +125,27 @@ if not st.session_state["logado"]:
     st.stop()
 
 # =========================================================
-# 📊 CSS DO DASHBOARD (Simula o zoom horizontal de 67%)
+# 📊 3. CSS DO DASHBOARD (MULA NATIVAMENTE O ZOOM DE 67%)
 # =========================================================
-# Injeção de estilo compactado aplicado apenas após o login com sucesso
 st.markdown("""
     <style>
-    /* Compacta o preenchimento das tabelas e fontes para emular o efeito de zoom reduzido */
+    /* Compactação cirúrgica da tabela para caber na horizontal sem quebrar linhas */
     .tabela-container { width: 100%; overflow-x: auto; margin-bottom: 25px; }
-    .ql-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 12.5px; color: #ffffff; }
-    .ql-table th, .ql-table td { border: 1px solid #444444; padding: 6px 10px; text-align: left; white-space: nowrap; }
+    .ql-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 11.5px; color: #ffffff; }
+    .ql-table th, .ql-table td { border: 1px solid #444444; padding: 5px 8px; text-align: left; white-space: nowrap; }
     .ql-table tr:nth-child(even) { background-color: #1e1e1e; }
     .ql-table tr:nth-child(odd) { background-color: #121212; }
     
-    /* Cores dos cabeçalhos aplicadas diretamente nas células do Status */
     .status-verde { background-color: #15803d !important; color: white !important; font-weight: bold !important; text-align: center !important; }
     .status-vermelho { background-color: #b91c1c !important; color: white !important; font-weight: bold !important; text-align: center !important; }
     
-    /* Otimiza as margens do Streamlit para aproveitar 100% dos monitores wide */
-    [data-testid="stAppViewBlockContainer"] { padding-left: 2rem !important; padding-right: 2rem !important; padding-top: 2rem !important; }
+    /* Remove as margens vazias laterais padrão do Streamlit para esticar a tela cheia */
+    [data-testid="stAppViewBlockContainer"] { 
+        padding-left: 1.5rem !important; 
+        padding-right: 1.5rem !important; 
+        padding-top: 1.5rem !important; 
+        max-width: 100% !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -155,7 +154,7 @@ if st.sidebar.button("🚪 Sair do Sistema"):
     st.rerun()
 
 # =========================================================
-# 📊 3. FUNÇÃO DE CARGA E PROCESSO CRUZADO DE DADOS (HÍBRIDA)
+# 📊 4. CARGA DE DADOS HÍBRIDA (PROCESSO COMPLETO)
 # =========================================================
 @st.cache_data(ttl="0d")
 def carregar_dados_completos():
@@ -177,7 +176,6 @@ def carregar_dados_completos():
         response = requests.get(URL_API_SHEETS, timeout=10)
         if response.status_code == 200:
             dados_sheets = response.json()
-            
             mapeados = set()
 
             for registro in dados_sheets:
@@ -203,7 +201,6 @@ def carregar_dados_completos():
                     df.at[idx, 'Status RH'] = registro.get('Status RH', '-')
                     df.at[idx, 'Candidato'] = registro.get('Candidato', '-')
                     df.at[idx, 'Data Admissão'] = formatar_data_br(registro.get('Data Admissão', '-'))
-                    
                     mapeados.add((nome_func, loja_reg))
 
             linhas_historico = []
@@ -237,11 +234,11 @@ def carregar_dados_completos():
                     }
                     linhas_historico.append(linha_órfã)
             
-            if linhas_historico:
-                df_historico = pd.DataFrame(linhas_historico)
+            if lines_historico := linhas_historico:
+                df_historico = pd.DataFrame(lines_historico)
                 df = pd.concat([df, df_historico], ignore_index=True)
                 
-    except Exception as e:
+    except:
         pass
 
     return df
@@ -252,7 +249,6 @@ try:
     perfil = st.session_state["perfil"]
     loja_fixa = st.session_state["loja_fixa"]
 
-    # Cabeçalho Interno Principal
     col_main_logo, col_main_title = st.columns([0.4, 2.5], vertical_alignment="center")
     with col_main_logo:
         if os.path.exists("passaro_logo.png"):
@@ -274,7 +270,7 @@ try:
     df_loja = df_bruto[df_bruto['Loja'] == loja_selecionada].copy()
 
     # =========================================================
-    # 🛠️ 4. BARRA LATERAL (SIDEBAR) - CONDIÇÕES DE DIGITAÇÃO
+    # 🛠️ BARRA LATERAL (SIDEBAR) - FORMULÁRIO OPERACIONAL
     # =========================================================
     st.sidebar.header("📝 Alimentar Informações")
     funcionarios_loja = sorted(df_loja['Nome'].dropna().unique())
@@ -437,13 +433,11 @@ try:
                 
                 for _, row in df_filtrado.iterrows():
                     html_tabela += "<tr>"
-                    
                     classe_status = obter_classe_status(row['Situação'])
                     html_tabela += f"<td {classe_status}>{row['Situação']}</td>"
                     
                     for col_nome in row.index[1:]:
                         html_tabela += f"<td>{row[col_nome]}</td>"
-                        
                     html_tabela += "</tr>"
                     
                 html_tabela += """
