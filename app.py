@@ -9,12 +9,30 @@ st.set_page_config(page_title="Molicenter - Quadro de Lotação", layout="wide")
 
 URL_API_SHEETS = "https://script.google.com/macros/s/AKfycbz_OA0O8zS-rMuuZEYu5rUeZow3lEZt-GcGYUWUbX4kiaRwDoQ9vZeoknsF5K-zFZvn/exec"
 
-# Estilo global das tabelas em HTML
+# Estilo global das tabelas em HTML (Configuração dinâmica de larguras e rolagem)
 st.markdown("""
     <style>
-    .tabela-container { width: 100%; overflow-x: auto; margin-bottom: 25px; }
-    .ql-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; color: #ffffff; }
-    .ql-table th, .ql-table td { border: 1px solid #444444; padding: 8px; text-align: left; }
+    .tabela-container { 
+        width: 100%; 
+        overflow-x: auto; 
+        margin-bottom: 25px; 
+        border: 1px solid #333333;
+        border-radius: 4px;
+    }
+    .ql-table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        font-family: sans-serif; 
+        font-size: 14px; 
+        color: #ffffff; 
+    }
+    /* th e td modificados: impede quebra de texto e força o dimensionamento dinâmico pelo conteúdo */
+    .ql-table th, .ql-table td { 
+        border: 1px solid #444444; 
+        padding: 10px 14px; 
+        text-align: left; 
+        white-space: nowrap; /* Garante que o texto fique em uma única linha sem quebrar */
+    }
     .ql-table tr:nth-child(even) { background-color: #1e1e1e; }
     .ql-table tr:nth-child(odd) { background-color: #121212; }
     </style>
