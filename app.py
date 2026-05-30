@@ -11,22 +11,18 @@ st.markdown("---")
 @st.cache_data
 def carregar_dados():
     df = pd.read_excel("Banco QL.xlsx", sheet_name="Banco")
-    
-    # INDICAÇÃO DIRETA PELO NOME DA COLUNA DO EXCEL
-    # Substitua 'Escala' pelo nome exato que está escrito na linha 1 da sua coluna L se for diferente!
-    nome_coluna_horario = 'Escala' 
-    
-    if nome_coluna_horario in df.columns:
-        df['Horario_Sistema_Real'] = df[nome_coluna_horario].astype(str).str.replace('.0', '', regex=False).str.strip()
-        df['Horario_Sistema_Real'] = df['Horario_Sistema_Real'].apply(lambda x: '-' if x in ['nan', 'None', ''] else x)
-    else:
-        # Caso o nome não seja idêntico, criamos uma cópia da 12ª coluna real do arquivo
-        df['Horario_Sistema_Real'] = df.iloc[:, 11].astype(str)
-        
     return df
 
 try:
     df_bruto = carregar_dados()
+
+    # --- DIAGNÓSTICO: MOSTRAR COLUNAS NA TELA ---
+    st.warning("🔍 Lista de colunas encontradas no seu Excel (Mapeamento):")
+    # Cria um dicionário mostrando o número da coluna e o nome dela para sabermos quem é quem
+    mapa_colunas = {f"Posição {i} (Letra no Pandas)": col for i, col in enumerate(df_bruto.columns)}
+    st.json(mapa_colunas)
+    st.markdown("---")
+    # --------------------------------------------
 
     # 3. FILTRO DE LOJA
     lojas_disponiveis = sorted(df_bruto['Loja'].dropna().unique())
@@ -68,8 +64,9 @@ try:
                 st.markdown(f"**🔹 Cargo: {funcao}**")
                 df_funcao = df_dept[df_dept['Função'] == funcao]
                 
-                tabela_exibicao = df_funcao[['Situação', 'Nome', 'Horario_Sistema_Real']].copy()
-                tabela_exibicao.columns = ['Status', 'Nome do Colaborador', 'Horário Sistema']
+                # Exibindo temporariamente uma coluna padrão para o app não quebrar enquanto diagnosticamos
+                tabela_exibicao = df_funcao[['Situação', 'Nome']].copy()
+                tabela_exibicao.columns = ['Status', 'Nome do Colaborador']
                 
                 st.dataframe(tabela_exibicao, use_container_width=True, hide_index=True)
 
