@@ -89,7 +89,7 @@ try:
                     'Status RH', 'Candidato', 'Data Admissão'
                 ]].copy()
                 
-                # 📊 DEFINIÇÃO CLARA DOS DOIS NÍVEIS DE CABEÇALHO
+                # DEFINIÇÃO DOS DOIS NÍVEIS DE CABEÇALHO
                 colunas_multinivel = [
                     ('DONO: ANALISTA', 'Status'),
                     ('DONO: ANALISTA', 'Nome do Colaborador'),
@@ -107,13 +107,23 @@ try:
                 
                 tabela_base.columns = pd.MultiIndex.from_tuples(colunas_multinivel)
                 
-                # 🔥 O PULO DO GATO: Usamos o .style para forçar o Streamlit a renderizar os dois níveis de títulos na tela
+                # 🎨 MAPEAMENTO DE CORES CSS COMPATÍVEL COM O COMPONENTE DATAFRAME
+                # Modifica os elementos th de nível 0 (títulos superiores) de forma indexada
                 tabela_estilizada = tabela_base.style.set_table_styles([
-                    {'selector': 'th.col_heading.level0', 'props': [('background-color', '#1f77b4'), ('color', 'white'), ('font-weight', 'bold'), ('text-align', 'center')]}
-                ])
+                    # Estilo Geral do nível superior (Centralizar e Negrito)
+                    {'selector': 'th.col_heading.level0', 'props': [('text-align', 'center'), ('font-weight', 'bold'), ('color', 'white')]},
+                    # Estilo Geral do nível inferior (Colunas filhas)
+                    {'selector': 'th.col_heading.level1', 'props': [('text-align', 'left')]},
+                    
+                    # Cores por bloco (utilizando classes CSS baseadas no mapeamento HTML do Pandas)
+                    {'selector': 'th.col_heading.level0.col0', 'props': [('background-color', '#1c3d5a')]}, # Analista - Azul Escuro
+                    {'selector': 'th.col_heading.level0.col3', 'props': [('background-color', '#d97706')]}, # Supervisor - Laranja
+                    {'selector': 'th.col_heading.level0.col4', 'props': [('background-color', '#15803d')]}, # Gerente - Verde
+                    {'selector': 'th.col_heading.level0.col9', 'props': [('background-color', '#b91c1c')]}, # RH - Vermelho
+                ], overwrite=False)
                 
-                # Exibe a tabela estruturada garantindo que o primeiro nível apareça
+                # Exibe a tabela com estilos injetados de cor e centralização
                 st.dataframe(tabela_estilizada, use_container_width=True, hide_index=True)
 
 except Exception as e:
-    st.error(f"Erro ao estruturar o cabeçalho multinível. Detalhes: {e}")
+    st.error(f"Erro ao estilizar as cores do cabeçalho. Detalhes: {e}")
