@@ -3,36 +3,23 @@ import pandas as pd
 import requests
 import json
 from datetime import datetime, date
+import os
 
-# 1. CONFIGURAÇÃO DA PÁGINA (Estilo Dashboard em tela cheia)
-st.set_page_config(page_title="Molicenter - Quadro de Lotação", layout="wide")
+# 1. CONFIGURAÇÃO DA PÁGINA (Com o novo título e o passarinho no ícone da aba)
+st.set_page_config(
+    page_title="Molicenter - QL (Quadro de Lotação)", 
+    page_icon="passaro_logo.png" if os.path.exists("passaro_logo.png") else "📊",
+    layout="wide"
+)
 
 URL_API_SHEETS = "https://script.google.com/macros/s/AKfycbz_OA0O8zS-rMuuZEYu5rUeZow3lEZt-GcGYUWUbX4kiaRwDoQ9vZeoknsF5K-zFZvn/exec"
 
-# Estilo global das tabelas em HTML (Configuração dinâmica de larguras e rolagem)
+# Estilo global das tabelas em HTML
 st.markdown("""
     <style>
-    .tabela-container { 
-        width: 100%; 
-        overflow-x: auto; 
-        margin-bottom: 25px; 
-        border: 1px solid #333333;
-        border-radius: 4px;
-    }
-    .ql-table { 
-        width: 100%; 
-        border-collapse: collapse; 
-        font-family: sans-serif; 
-        font-size: 14px; 
-        color: #ffffff; 
-    }
-    /* th e td modificados: impede quebra de texto e força o dimensionamento dinâmico pelo conteúdo */
-    .ql-table th, .ql-table td { 
-        border: 1px solid #444444; 
-        padding: 10px 14px; 
-        text-align: left; 
-        white-space: nowrap; /* Garante que o texto fique em uma única linha sem quebrar */
-    }
+    .tabela-container { width: 100%; overflow-x: auto; margin-bottom: 25px; }
+    .ql-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; color: #ffffff; }
+    .ql-table th, .ql-table td { border: 1px solid #444444; padding: 10px 14px; text-align: left; white-space: nowrap; }
     .ql-table tr:nth-child(even) { background-color: #1e1e1e; }
     .ql-table tr:nth-child(odd) { background-color: #121212; }
     </style>
@@ -76,7 +63,14 @@ if "logado" not in st.session_state:
 
 # INTERFACE DA TELA DE LOGIN
 if not st.session_state["logado"]:
-    st.title("🔐 Sistema Quadro de Lotação - Molicenter")
+    # Exibe o passarinho no topo do login lado a lado com o novo nome do sistema
+    col_logo_top, col_title_top = st.columns([0.1, 1.9])
+    with col_logo_top:
+        if os.path.exists("passaro_logo.png"):
+            st.image("passaro_logo.png", width=55)
+    with col_title_top:
+        st.title("Molicenter - QL (Quadro de Lotação)")
+    
     st.markdown("---")
     
     col_login, _ = st.columns([1, 2])
@@ -169,7 +163,14 @@ try:
     perfil = st.session_state["perfil"]
     loja_fixa = st.session_state["loja_fixa"]
 
-    st.title("📊 Quadro de Lotação (QL) // Requisição")
+    # Exibe o passarinho na tela principal interna também
+    col_main_logo, col_main_title = st.columns([0.05, 1.95])
+    with col_main_logo:
+        if os.path.exists("passaro_logo.png"):
+            st.image("passaro_logo.png", width=50)
+    with col_main_title:
+        st.title("Molicenter - QL (Quadro de Lotação)")
+        
     st.sidebar.markdown(f"**Usuário:** `{st.session_state['usuario']}`")
     st.sidebar.markdown(f"**Nível:** `{perfil.upper()}`")
     st.markdown("---")
@@ -318,17 +319,18 @@ try:
                     'Status RH', 'Candidato', 'Data Admissão'
                 ]]
                 
-                # HTML ATUALIZADO COM OS TEXTOS DO SUB-CABEÇALHO CENTRALIZADOS
                 html_tabela = f"""
                 <div class="tabela-container">
                     <table class="ql-table">
                         <thead>
+                            <!-- LINHA 1: DONOS DO BLOCO -->
                             <tr>
                                 <th colspan="3" style="background-color: #1c3d5a; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: ANALISTA</th>
                                 <th colspan="1" style="background-color: #d97706; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: SUPERVISOR</th>
                                 <th colspan="5" style="background-color: #15803d; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: GERENTE</th>
                                 <th colspan="3" style="background-color: #b91c1c; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: RH</th>
                             </tr>
+                            <!-- LINHA 2: COLUNAS COM REGRAS DE CORES E TEXTO CENTRALIZADO -->
                             <tr style="color: #ffffff; font-weight: bold;">
                                 <th style="background-color: #244e73; border-top: none; text-align: center;">Status</th>
                                 <th style="background-color: #244e73; border-top: none; text-align: center;">Nome do Colaborador</th>
