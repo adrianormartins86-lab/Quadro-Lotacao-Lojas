@@ -38,21 +38,6 @@ def formatar_data_br(valor):
     except:
         return val_str
 
-# Estilo global das tabelas em HTML (Injeção de CSS para travar larguras e centralizar status)
-st.markdown("""
-    <style>
-    .tabela-container { width: 100%; overflow-x: auto; margin-bottom: 25px; }
-    .ql-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; color: #ffffff; }
-    .ql-table th, .ql-table td { border: 1px solid #444444; padding: 10px 14px; text-align: left; white-space: nowrap; }
-    .ql-table tr:nth-child(even) { background-color: #1e1e1e; }
-    .ql-table tr:nth-child(odd) { background-color: #121212; }
-    
-    /* Cores dos cabeçalhos aplicadas diretamente nas células do Status */
-    .status-verde { background-color: #15803d !important; color: white !important; font-weight: bold !important; text-align: center !important; }
-    .status-vermelho { background-color: #b91c1c !important; color: white !important; font-weight: bold !important; text-align: center !important; }
-    </style>
-""", unsafe_allow_html=True)
-
 # URL DO SEU MOTOR GOOGLE APPS SCRIPT
 URL_API_SHEETS = "https://script.google.com/macros/s/AKfycbz_OA0O8zS-rMuuZEYu5rUeZow3lEZt-GcGYUWUbX4kiaRwDoQ9vZeoknsF5K-zFZvn/exec"
 
@@ -93,30 +78,39 @@ if "logado" not in st.session_state:
     st.session_state["loja_fixa"] = None
 
 # =========================================================
-# 🔐 2. INTERFACE E CONTROLE DA TELA DE LOGIN (CENTRALIZADA)
+# 🔐 2. INTERFACE E CONTROLE DA TELA DE LOGIN (OTIMIZADA)
 # =========================================================
 if not st.session_state["logado"]:
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    # CSS dinâmico específico para a Tela de Login (Garante tamanho ideal independente do zoom)
+    st.markdown("""
+        <style>
+        /* Trava o formulário de login em uma largura confortável no centro */
+        [data-testid="stColumn"] {
+            max-width: 460px !important;
+            margin: 0 auto !important;
+        }
+        /* Ajusta o espaçamento do título do login */
+        h1 { font-size: 32px !important; text-align: left !important; }
+        </style>
+        <br><br>
+    """, unsafe_allow_html=True)
     
-    # Estrutura principal para centralizar o formulário na tela
-    col_esq, col_centro, col_dir = st.columns([1, 1.4, 1])
+    # Coluna única centralizada controlada estritamente pelo CSS acima
+    _, col_centro, _ = st.columns([0.1, 9.8, 0.1])
     
     with col_centro:
-        # Se a logo existir, criamos colunas internas muito próximas para alinhar a imagem e o texto nativamente
         if os.path.exists("passaro_logo.png"):
-            # Uma coluna fina para a logo e outra para o texto (espaço de gap controlado)
             col_logo_vaga, col_texto_vaga = st.columns([0.35, 1], vertical_alignment="center")
             with col_logo_vaga:
                 st.image("passaro_logo.png", width=85)
             with col_texto_vaga:
-                st.markdown("<h1 style='margin: 0; padding-left: 0; font-size: 34px;'>Molicenter - QL</h1>", unsafe_allow_html=True)
+                st.markdown("<h1 style='margin: 0; padding-left: 0;'>Molicenter - QL</h1>", unsafe_allow_html=True)
         else:
             st.markdown("<h1 style='text-align: center;'>Molicenter - QL</h1>", unsafe_allow_html=True)
         
         st.markdown("<h5 style='text-align: center; color: #888888; margin-top: 5px;'>Quadro de Lotação</h5>", unsafe_allow_html=True)
         st.markdown("<hr style='margin-top: 10px; margin-bottom: 25px;'>", unsafe_allow_html=True)
         
-        # Inputs organizados dentro do bloco centralizado
         user_input = st.text_input("E-mail corporativo:")
         pass_input = st.text_input("Senha de acesso:", type="password")
         
@@ -133,6 +127,28 @@ if not st.session_state["logado"]:
             else:
                 st.error("Usuários ou senha incorretos. Tente novamente.")
     st.stop()
+
+# =========================================================
+# 📊 CSS DO DASHBOARD (Simula o zoom horizontal de 67%)
+# =========================================================
+# Injeção de estilo compactado aplicado apenas após o login com sucesso
+st.markdown("""
+    <style>
+    /* Compacta o preenchimento das tabelas e fontes para emular o efeito de zoom reduzido */
+    .tabela-container { width: 100%; overflow-x: auto; margin-bottom: 25px; }
+    .ql-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 12.5px; color: #ffffff; }
+    .ql-table th, .ql-table td { border: 1px solid #444444; padding: 6px 10px; text-align: left; white-space: nowrap; }
+    .ql-table tr:nth-child(even) { background-color: #1e1e1e; }
+    .ql-table tr:nth-child(odd) { background-color: #121212; }
+    
+    /* Cores dos cabeçalhos aplicadas diretamente nas células do Status */
+    .status-verde { background-color: #15803d !important; color: white !important; font-weight: bold !important; text-align: center !important; }
+    .status-vermelho { background-color: #b91c1c !important; color: white !important; font-weight: bold !important; text-align: center !important; }
+    
+    /* Otimiza as margens do Streamlit para aproveitar 100% dos monitores wide */
+    [data-testid="stAppViewBlockContainer"] { padding-left: 2rem !important; padding-right: 2rem !important; padding-top: 2rem !important; }
+    </style>
+""", unsafe_allow_html=True)
 
 if st.sidebar.button("🚪 Sair do Sistema"):
     st.session_state["logado"] = False
