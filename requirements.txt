@@ -1,2 +1,1 @@
 openpyxl
-streamlit-gsheets==0.0.3
