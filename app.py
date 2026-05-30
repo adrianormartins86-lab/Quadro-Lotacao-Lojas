@@ -12,13 +12,16 @@ st.markdown("---")
 def carregar_dados():
     df = pd.read_excel("Banco QL.xlsx", sheet_name="Banco")
     
-    # TRAVANDO NA COLUNA L (A 12ª coluna do Excel é o índice 11 no Python)
-    # Vamos criar a coluna 'Horario_Sistema_Real' pegando direto os dados da coluna L
-    try:
-        df['Horario_Sistema_Real'] = df.iloc[:, 11].astype(str).str.replace('.0', '', regex=False).str.strip()
+    # INDICAÇÃO DIRETA PELO NOME DA COLUNA DO EXCEL
+    # Substitua 'Escala' pelo nome exato que está escrito na linha 1 da sua coluna L se for diferente!
+    nome_coluna_horario = 'Escala' 
+    
+    if nome_coluna_horario in df.columns:
+        df['Horario_Sistema_Real'] = df[nome_coluna_horario].astype(str).str.replace('.0', '', regex=False).str.strip()
         df['Horario_Sistema_Real'] = df['Horario_Sistema_Real'].apply(lambda x: '-' if x in ['nan', 'None', ''] else x)
-    except Exception as e:
-        df['Horario_Sistema_Real'] = "-"
+    else:
+        # Caso o nome não seja idêntico, criamos uma cópia da 12ª coluna real do arquivo
+        df['Horario_Sistema_Real'] = df.iloc[:, 11].astype(str)
         
     return df
 
@@ -65,11 +68,9 @@ try:
                 st.markdown(f"**🔹 Cargo: {funcao}**")
                 df_funcao = df_dept[df_dept['Função'] == funcao]
                 
-                # Monta a tabela final buscando a coluna L que tratamos por posição
                 tabela_exibicao = df_funcao[['Situação', 'Nome', 'Horario_Sistema_Real']].copy()
                 tabela_exibicao.columns = ['Status', 'Nome do Colaborador', 'Horário Sistema']
                 
-                # Exibe a tabela na tela
                 st.dataframe(tabela_exibicao, use_container_width=True, hide_index=True)
 
 except Exception as e:
