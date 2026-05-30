@@ -7,22 +7,37 @@ st.set_page_config(page_title="Molicenter - Quadro de Lotação", layout="wide")
 st.title("📊 Quadro de Lotação (QL) // Requisição")
 st.markdown("---")
 
-# 2. FUNÇÃO PARA CARREGAR OS DADOS DO EXCEL
+# 2. FUNÇÃO PARA CARREGAR E PREPARAR OS DADOS DO EXCEL
 @st.cache_data
 def carregar_dados():
     df = pd.read_excel("Banco QL.xlsx", sheet_name="Banco")
     
-    # MAPEAMENTO DEFINITIVO DA COLUNA DE HORÁRIOS
-    # Usando o nome exato identificado no mapeamento: 'Descrição (Escala)'
+    # TRATAMENTO DO HORÁRIO DO SISTEMA (Coluna L - 'Descrição (Escala)')
     nome_coluna_horario = 'Descrição (Escala)'
-    
     if nome_coluna_horario in df.columns:
         df['Horario_Sistema_Real'] = df[nome_coluna_horario].astype(str).str.replace('.0', '', regex=False).str.strip()
         df['Horario_Sistema_Real'] = df['Horario_Sistema_Real'].apply(lambda x: '-' if x in ['nan', 'None', ''] else x)
     else:
-        # Fallback de segurança caso o cabeçalho mude
         df['Horario_Sistema_Real'] = "-"
         
+    # CRIAÇÃO/VERIFICAÇÃO DAS 9 COLUNAS CONFORME A NOVA DISTRIBUIÇÃO DE PAPÉIS
+    colunas_novas = [
+        'Observação', 
+        'Data Abertura', 'Responsável', 'Horário Contrato', 'Sexo', 'Motivo', 
+        'Status RH', 'Candidato', 'Data Admissão'
+    ]
+    
+    for col in colunas_novas:
+        if col not in df.columns:
+            # Vincula a coluna 'Situação.1' caso ela represente o Status do RH no Excel original
+            if col == 'Status RH' and 'Situação.1' in df.columns:
+                df['Status RH'] = df['Situação.1'].fillna('-')
+            else:
+                df[col] = "-" # Cria a coluna com traço padrão se estiver ausente
+        else:
+            # Se já existir, remove decimais (.0) e preenche vazios com traço para limpar o layout
+            df[col] = df[col].fillna("-").astype(str).str.replace('.0', '', regex=False)
+            
     return df
 
 try:
@@ -68,12 +83,24 @@ try:
                 st.markdown(f"**🔹 Cargo: {funcao}**")
                 df_funcao = df_dept[df_dept['Função'] == funcao]
                 
-                # Monta a tabela final com as colunas certas mapeadas
-                tabela_exibicao = df_funcao[['Situação', 'Nome', 'Horario_Sistema_Real']].copy()
-                tabela_exibicao.columns = ['Status', 'Nome do Colaborador', 'Horário Sistema']
+                # ESTRUTURAÇÃO DE COLUNAS SEGUINDO A NOVA LÓGICA SOLICITADA
+                tabela_exibicao = df_funcao[[
+                    'Situação', 'Nome', 'Horario_Sistema_Real',       # Analista (Você)
+                    'Observação',                                     # Supervisor
+                    'Data Abertura', 'Responsável', 'Horário Contrato', 'Sexo', 'Motivo', # Gerente
+                    'Status RH', 'Candidato', 'Data Admissão'         # RH
+                ]].copy()
                 
-                # Exibe a tabela na tela de forma limpa
+                # Renomeando os cabeçalhos para exibição amigável e idêntica na tela
+                tabela_exibicao.columns = [
+                    'Status', 'Nome do Colaborador', 'Horário Sistema',
+                    'Observação',
+                    'Data Abertura', 'Responsável', 'Horário Contrato', 'Sexo', 'Motivo',
+                    'Status RH', 'Candidato', 'Data Admissão'
+                ]
+                
+                # Exibe a tabela larga com barra de rolagem horizontal responsiva
                 st.dataframe(tabela_exibicao, use_container_width=True, hide_index=True)
 
 except Exception as e:
-    st.error(f"Erro ao processar as colunas do Excel. Detalhes: {e}")
+    st.error(f"Erro ao estruturar a nova lógica de colunas. Detalhes: {e}")
