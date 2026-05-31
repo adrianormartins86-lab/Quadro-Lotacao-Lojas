@@ -185,7 +185,6 @@ def carregar_dados_completos():
     for col in colunas_digitacao:
         df[col] = "-"
         
-    # Coluna de controle interna para identificar quem tem alteração real no Sheets
     df['Possui_Alteracao_Sheets'] = False
 
     try:
@@ -221,7 +220,6 @@ def carregar_dados_completos():
                     df.at[idx, 'Candidato'] = registro.get('Candidato', '-')
                     df.at[idx, 'Data Admissão'] = formatar_data_br(registro.get('Data Admissão', '-'))
                     
-                    # Marca como modificado
                     df.at[idx, 'Possui_Alteracao_Sheets'] = True
                     mapeados.add((nome_func, loja_reg))
 
@@ -257,7 +255,7 @@ def carregar_dados_completos():
                         'Status RH': registro.get('Status RH', '-'),
                         'Candidato': registro.get('Candidato', '-'),
                         'Data Admissão': formatar_data_br(registro.get('Data Admissão', '-')),
-                        'Possui_Alteracao_Sheets': True # Novos inseridos sempre têm alteração
+                        'Possui_Alteracao_Sheets': True
                     }
                     linhas_novas_manuais.append(linha_manual)
             
@@ -448,12 +446,10 @@ try:
     # 🏪 5. INDICADORES E MATRIZ VISUAL CENTRAL
     # =========================================================
     
-    # 👇 NOVO FILTRO DE AUDITORIA GLOBAL DE ALTERAÇÕES 👇
     col_titulo, col_filtro_sheets = st.columns([1.5, 1], vertical_alignment="center")
     with col_titulo:
         st.markdown(f"### 🏪 Quadro de Funcionários - Loja {int(loja_selecionada):02d}")
     with col_filtro_sheets:
-        # Botão/Checkbox dinâmico para isolar os casos modificados/inseridos no Sheets
         apenas_alterados = st.checkbox("📋 Visualizar apenas registros alterados/inseridos (Geral)", value=False)
 
     df_loja['Situação_Upper'] = df_loja['Situação'].astype(str).str.upper()
@@ -470,11 +466,9 @@ try:
 
     st.subheader("📋 Distribuição por Setor e Cargo")
     
-    # Localizador Visual Unitário
     st.markdown("🔍 **Localizador Rápido**")
     focar_colaborador = st.checkbox(f"Focar visualização apenas no colaborador: {colaborador_final}" if colaborador_final else "Focar colaborador selecionado", value=False)
     
-    # Aplica o filtro de alteração na base inteira se o checkbox estiver ativo
     if apenas_alterados:
         df_exibicao = df_loja[df_loja['Possui_Alteracao_Sheets'] == True]
         st.info("💡 Exibindo estritamente colaboradores com digitação salva no Google Sheets.")
@@ -493,8 +487,9 @@ try:
             if colaborador_final not in df_dept['Nome'].values:
                 continue
         
-        # Se estiver filtrando apenas os alterados ou localizando, expande automaticamente
-        expander_aberto = True if (focar_colaborador or apenas_alterados) else False
+        # 🌟 AJUSTE AQUI: Mudado para True por padrão para vir tudo aberto! 🌟
+        # Se estiver localizando ou auditando, continua aberto. Caso contrário, também começa aberto.
+        expander_aberto = True 
         
         with st.expander(f"🏢 DEPARTAMENTO: {dept}", expanded=expander_aberto):
             funcoes = sorted(df_dept['Função'].dropna().unique())
