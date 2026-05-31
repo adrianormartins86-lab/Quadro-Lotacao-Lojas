@@ -228,12 +228,13 @@ def carregar_dados_completos():
                     sigla_sexo = str(registro.get('Sexo', '-')).strip()
                     sexo_exibicao = MAPA_SIGLA_SEXO.get(sigla_sexo, sigla_sexo)
                     
+                    # Tenta capturar informações de Dept e Função enviadas manualmente, senão define histórico
                     linha_órfã = {
                         'Loja': loja_reg,
                         'Nome': nome_func, 
-                        'Situação': 'Demitido (Histórico)', 
-                        'Dept': 'HISTÓRICO / EX-COLABORADORES', 
-                        'Função': 'Sem Vínculo Atual',
+                        'Situação': registro.get('Situação', 'Demitido (Histórico)'), 
+                        'Dept': registro.get('Dept', 'HISTÓRICO / EX-COLABORADORES'), 
+                        'Função': registro.get('Função', 'Sem Vínculo Atual'),
                         'Horario_Sistema_Real': '-',
                         'Observação': registro.get('Observação', '-'),
                         'Data Abertura': formatar_data_br(registro.get('Data Abertura', '-')),
@@ -283,28 +284,60 @@ try:
     df_loja = df_bruto[df_bruto['Loja'] == loja_selecionada].copy()
 
     # =========================================================
-    # 🛠️ BARRA LATERAL (SIDEBAR) - FORMULÁRIO OPERACIONAL
+    # 🛠️ BARRA LATERAL (SIDEBAR) - FORMULÁRIO OPERACIONAL ADAPTADO
     # =========================================================
     st.sidebar.header("📝 Alimentar Informações")
-    funcionarios_loja = sorted(df_loja['Nome'].dropna().unique())
-    colaborador_selecionado = st.sidebar.selectbox("Selecione o Colaborador:", funcionarios_loja)
     
-    if colaborador_selecionado:
-        dados_func = df_loja[df_loja['Nome'] == colaborador_selecionado].iloc[0]
+    # Nova chave seletora para permitir digitação de quem está fora da lista
+    tipo_registro = st.sidebar.radio("Modo de Operação:", ["Editar Colaborador Existente", "Cadastrar Novo / Não Listado"])
+    
+    dados_func = None
+    colaborador_final = ""
+    dept_final = ""
+    funcao_final = ""
+    situacao_final = ""
+    
+    if tipo_registro == "Editar Colaborador Existente":
+        funcionarios_loja = sorted(df_loja['Nome'].dropna().unique())
+        colaborador_selecionado = st.sidebar.selectbox("Selecione o Colaborador:", funcionarios_loja)
+        if colaborador_selecionado:
+            dados_func = df_loja[df_loja['Nome'] == colaborador_selecionado].iloc[0]
+            colaborador_final = colaborador_selecionado
+            dept_final = str(dados_func['Dept'])
+            funcao_final = str(dados_func['Função'])
+            situacao_final = str(dados_func['Situação'])
+    else:
+        st.sidebar.markdown("---")
+        colaborador_final = st.sidebar.text_input("Nome Completo do Colaborador:").strip().upper()
+        
+        # Coleta os departamentos e funções existentes para sugerir ou permitir digitação livre
+        depts_existentes = sorted(list(df_bruto['Dept'].dropna().unique()))
+        dept_final = st.sidebar.selectbox("Departamento:", depts_existentes)
+        
+        funcoes_existentes = sorted(list(df_bruto[df_bruto['Dept'] == dept_final]['Função'].dropna().unique()))
+        if not funcoes_existentes:
+            funcoes_existentes = sorted(list(df_bruto['Função'].dropna().unique()))
+        funcao_final = st.sidebar.selectbox("Cargo/Função:", funcoes_existentes)
+        
+        situacao_final = st.sidebar.selectbox("Situação Inicial:", ["Ativos", "Demitido", "Afastamento", "Férias"])
+        st.sidebar.warning("⚠️ Este colaborador será gravado diretamente no histórico do Sheets.")
+
+    if colaborador_final:
         st.sidebar.markdown("---")
         
         # 🔸 SUPERVISOR
         st.sidebar.subheader("🔸 Supervisor")
+        val_obs_default = str(dados_func['Observação']) if (dados_func is not None and str(dados_func['Observação']) != "-") else ""
         if perfil in ["analista", "rh", "supervisor"]:
-            nova_obs = st.sidebar.text_area("Observação:", value=str(dados_func['Observação']) if str(dados_func['Observação']) != "-" else "")
+            nova_obs = st.sidebar.text_area("Observação:", value=val_obs_default)
         else:
-            st.sidebar.text_input("Observação:", value=str(dados_func['Observação']), disabled=True)
-            nova_obs = str(dados_func['Observação'])
+            st.sidebar.text_input("Observação:", value=val_obs_default if val_obs_default else "-", disabled=True)
+            nova_obs = val_obs_default if val_obs_default else "-"
         
         # 🔹 GERENTE
         st.sidebar.subheader("🔹 Gerente")
         if perfil in ["analista", "rh", "supervisor", "gerente"]:
-            data_ab_atual = str(dados_func['Data Abertura']).strip()
+            data_ab_atual = str(dados_func['Data Abertura']).strip() if dados_func is not None else "-"
             try:
                 data_ab_default = datetime.strptime(data_ab_atual, "%d/%m/%Y").date() if data_ab_atual != "-" else date.today()
             except:
@@ -312,38 +345,39 @@ try:
             nova_data_ab_col = st.sidebar.date_input("Data Abertura:", value=data_ab_default, format="DD/MM/YYYY")
             nova_data_abertura = nova_data_ab_col.strftime("%d/%m/%Y")
             
-            novo_responsavel = st.sidebar.text_input("Responsável:", value=str(dados_func['Responsável']) if str(dados_func['Responsável']) != "-" else "")
+            val_resp_default = str(dados_func['Responsável']) if (dados_func is not None and str(dados_func['Responsável']) != "-") else ""
+            novo_responsavel = st.sidebar.text_input("Responsável:", value=val_resp_default)
             
-            # Ajuste 1: Forçado explicitamente como texto puro (String)
-            novo_horario_contrato = st.sidebar.text_input("Horário Contrato:", value=str(dados_func['Horário Contrato']) if str(dados_func['Horário Contrato']) != "-" else "")
+            val_horario_default = str(dados_func['Horário Contrato']) if (dados_func is not None and str(dados_func['Horário Contrato']) != "-") else ""
+            novo_horario_contrato = st.sidebar.text_input("Horário Contrato:", value=val_horario_default)
             
-            sexo_exibido_atual = str(dados_func['Sexo']).strip()
+            sexo_exibido_atual = str(dados_func['Sexo']).strip() if dados_func is not None else "-"
             idx_sexo = OPCOES_SEXO.index(sexo_exibido_atual) if sexo_exibido_atual in OPCOES_SEXO else 0
             texto_sexo_selecionado = st.sidebar.selectbox("Sexo:", OPCOES_SEXO, index=idx_sexo)
             novo_sexo = MAPA_SEXO_SIGLA.get(texto_sexo_selecionado, "-")
             
-            motivo_atual = str(dados_func['Motivo']).strip()
+            motivo_atual = str(dados_func['Motivo']).strip() if dados_func is not None else "-"
             idx_motivo = OPCOES_MOTIVO.index(motivo_atual) if motivo_atual in OPCOES_MOTIVO else 0
             novo_motivo = st.sidebar.selectbox("Motivo:", OPCOES_MOTIVO, index=idx_motivo)
         else:
-            nova_data_abertura = st.sidebar.text_input("Data Abertura:", value=str(dados_func['Data Abertura']), disabled=True)
-            novo_responsavel = st.sidebar.text_input("Responsável:", value=str(dados_func['Responsável']), disabled=True)
-            novo_horario_contrato = st.sidebar.text_input("Horário Contrato:", value=str(dados_func['Horário Contrato']), disabled=True)
-            novo_sexo_exibido = st.sidebar.text_input("Sexo:", value=str(dados_func['Sexo']), disabled=True)
+            nova_data_abertura = st.sidebar.text_input("Data Abertura:", value=str(dados_func['Data Abertura']) if dados_func is not None else "-", disabled=True)
+            novo_responsavel = st.sidebar.text_input("Responsável:", value=str(dados_func['Responsável']) if dados_func is not None else "-", disabled=True)
+            novo_horario_contrato = st.sidebar.text_input("Horário Contrato:", value=str(dados_func['Horário Contrato']) if dados_func is not None else "-", disabled=True)
+            novo_sexo_exibido = st.sidebar.text_input("Sexo:", value=str(dados_func['Sexo']) if dados_func is not None else "-", disabled=True)
             novo_sexo = MAPA_SEXO_SIGLA.get(novo_sexo_exibido, "-")
-            novo_motivo = st.sidebar.text_input("Motivo:", value=str(dados_func['Motivo']), disabled=True)
+            novo_motivo = st.sidebar.text_input("Motivo:", value=str(dados_func['Motivo']) if dados_func is not None else "-", disabled=True)
         
         # 🔺 RH
         st.sidebar.subheader("🔺 Recursos Humanos (RH)")
         if perfil in ["analista", "rh"]:
-            status_atual = str(dados_func['Status RH']).strip()
+            status_atual = str(dados_func['Status RH']).strip() if dados_func is not None else "-"
             idx_status = OPCOES_STATUS_RH.index(status_atual) if status_atual in OPCOES_STATUS_RH else 0
             novo_status_rh = st.sidebar.selectbox("Status RH:", OPCOES_STATUS_RH, index=idx_status)
             
-            novo_candidato = st.sidebar.text_input("Candidato:", value=str(dados_func['Candidato']) if str(dados_func['Candidato']) != "-" else "")
+            val_cand_default = str(dados_func['Candidato']) if (dados_func is not None and str(dados_func['Candidato']) != "-") else ""
+            novo_candidato = st.sidebar.text_input("Candidato:", value=val_cand_default)
             
-            # Ajuste 2: Adição de Checkbox para tornar a Data Opcional
-            data_ad_atual = str(dados_func['Data Admissão']).strip()
+            data_ad_atual = str(dados_func['Data Admissão']).strip() if dados_func is not None else "-"
             tem_data_anterior = data_ad_atual != "-"
             
             definir_data = st.sidebar.checkbox("Definir data de admissão", value=tem_data_anterior)
@@ -359,37 +393,43 @@ try:
                 st.sidebar.info("Nenhuma data selecionada para Admissão.")
                 nova_data_admissao = "-"
         else:
-            novo_status_rh = st.sidebar.text_input("Status RH:", value=str(dados_func['Status RH']), disabled=True)
-            novo_candidato = st.sidebar.text_input("Candidato:", value=str(dados_func['Candidato']), disabled=True)
-            nova_data_admissao = st.sidebar.text_input("Data Admissão:", value=str(dados_func['Data Admissão']), disabled=True)
+            novo_status_rh = st.sidebar.text_input("Status RH:", value=str(dados_func['Status RH']) if dados_func is not None else "-", disabled=True)
+            novo_candidato = st.sidebar.text_input("Candidato:", value=str(dados_func['Candidato']) if dados_func is not None else "-", disabled=True)
+            nova_data_admissao = st.sidebar.text_input("Data Admissão:", value=str(dados_func['Data Admissão']) if dados_func is not None else "-", disabled=True)
         
         if st.sidebar.button("💾 Salvar Alterações", use_container_width=True):
-            payload = {
-                "Loja": int(loja_selecionada),
-                "Nome": colaborador_selecionado,
-                "Observacao": nova_obs,
-                "DataAbertura": nova_data_abertura,
-                "Responsavel": novo_responsavel,
-                "HorarioContrato": str(novo_horario_contrato), # Correção do mapeamento de variável e forçado string
-                "Sexo": novo_sexo,
-                "Motivo": novo_motivo,
-                "StatusRH": novo_status_rh,
-                "Candidato": novo_candidato,
-                "DataAdmissao": nova_data_admissao,
-                "Usuario": st.session_state["usuario"]
-            }
-            
-            try:
-                headers = {'Content-Type': 'application/json'}
-                res = requests.post(URL_API_SHEETS, data=json.dumps(payload), headers=headers, timeout=10)
-                if res.status_code == 200:
-                    st.sidebar.success("Dados salvos com sucesso!")
-                    st.cache_data.clear()
-                    st.rerun()
-                else:
-                    st.sidebar.error("Erro ao comunicar com a API do Sheets.")
-            except Exception as e:
-                st.sidebar.error(f"Erro de conexão: {e}")
+            if tipo_registro == "Cadastrar Novo / Não Listado" and not colaborador_final:
+                st.sidebar.error("Erro: O nome do colaborador não pode ficar em branco.")
+            else:
+                payload = {
+                    "Loja": int(loja_selecionada),
+                    "Nome": colaborador_final,
+                    "Dept": dept_final,
+                    "Funcao": funcao_final,
+                    "Situaçao": situacao_final, # Passando os campos de estrutura para novos cadastros
+                    "Observacao": nova_obs,
+                    "DataAbertura": nova_data_abertura,
+                    "Responsavel": novo_responsavel,
+                    "HorarioContrato": str(novo_horario_contrato),
+                    "Sexo": novo_sexo,
+                    "Motivo": novo_motivo,
+                    "StatusRH": novo_status_rh,
+                    "Candidato": novo_candidato,
+                    "DataAdmissao": nova_data_admissao,
+                    "Usuario": st.session_state["usuario"]
+                }
+                
+                try:
+                    headers = {'Content-Type': 'application/json'}
+                    res = requests.post(URL_API_SHEETS, data=json.dumps(payload), headers=headers, timeout=10)
+                    if res.status_code == 200:
+                        st.sidebar.success("Dados salvos com sucesso!")
+                        st.cache_data.clear()
+                        st.rerun()
+                    else:
+                        st.sidebar.error("Erro ao comunicar com a API do Sheets.")
+                except Exception as e:
+                    st.sidebar.error(f"Erro de conexão: {e}")
 
     # =========================================================
     # 🏪 5. INDICADORES E MATRIZ VISUAL CENTRAL
