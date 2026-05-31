@@ -72,7 +72,7 @@ if "logado" not in st.session_state:
     st.session_state["loja_fixa"] = None
 
 # =========================================================
-# 🔐 2. INTERFACE DA TELA DE LOGIN (MANTIDA PERFEITA)
+# 🔐 2. INTERFACE DA TELA DE LOGIN
 # =========================================================
 if not st.session_state["logado"]:
     st.markdown("""
@@ -131,7 +131,7 @@ if not st.session_state["logado"]:
     st.stop()
 
 # =========================================================
-# 📊 3. CSS DO DASHBOARD INTERNO (OTIMIZAÇÃO DE ÁREA ÚTIL)
+# 📊 3. CSS DO DASHBOARD INTERNO
 # =========================================================
 st.markdown("""
     <style>
@@ -167,7 +167,7 @@ if st.sidebar.button("🚪 Sair do Sistema"):
     st.rerun()
 
 # =========================================================
-# 📊 4. CARGA DE DADOS HÍBRIDA
+# 📊 4. CARGA DE DADOS HÍBRIDA (CORRIGIDA)
 # =========================================================
 @st.cache_data(ttl="0d")
 def carregar_dados_completos():
@@ -191,6 +191,7 @@ def carregar_dados_completos():
             dados_sheets = response.json()
             mapeados = set()
 
+            # Passo A: Mapeia dados digitados para quem JÁ EXISTE no Excel fixo
             for registro in dados_sheets:
                 nome_func = registro.get('Nome')
                 try:
@@ -205,6 +206,10 @@ def carregar_dados_completos():
                     sigla_sexo = str(registro.get('Sexo', '-')).strip()
                     sexo_exibicao = MAPA_SIGLA_SEXO.get(sigla_sexo, sigla_sexo)
                     
+                    # Atualiza a situação se ela tiver sido guardada no Sheets (caso mude)
+                    if 'Situação' in registro and str(registro.get('Situação')).strip() not in ["", "-"]:
+                        df.at[idx, 'Situação'] = registro.get('Situação')
+
                     df.at[idx, 'Observação'] = registro.get('Observação', '-')
                     df.at[idx, 'Data Abertura'] = formatar_data_br(registro.get('Data Abertura', '-'))
                     df.at[idx, 'Responsável'] = registro.get('Responsável', '-')
@@ -216,7 +221,8 @@ def carregar_dados_completos():
                     df.at[idx, 'Data Admissão'] = formatar_data_br(registro.get('Data Admissão', '-'))
                     mapeados.add((nome_func, loja_reg))
 
-            linhas_historico = []
+            # Passo B (AJUSTADO): Puxa quem foi digitado MANUALMENTE para os seus respectivos setores/cargos reais
+            linhas_novas_manuais = []
             for registro in dados_sheets:
                 nome_func = registro.get('Nome')
                 try:
@@ -228,13 +234,17 @@ def carregar_dados_completos():
                     sigla_sexo = str(registro.get('Sexo', '-')).strip()
                     sexo_exibicao = MAPA_SIGLA_SEXO.get(sigla_sexo, sigla_sexo)
                     
-                    # Tenta capturar informações de Dept e Função enviadas manualmente, senão define histórico
-                    linha_órfã = {
+                    # Se tiver Dept no Sheets, usa ele! Senão joga em Ex-Colaboradores por segurança
+                    dept_final = registro.get('Dept') if registro.get('Dept') else 'HISTÓRICO / EX-COLABORADORES'
+                    funcao_final = registro.get('Funco') if registro.get('Funco') else (registro.get('Função') if registro.get('Função') else 'Sem Vínculo Atual')
+                    situacao_final = registro.get('Situaçao') if registro.get('Situaçao') else (registro.get('Situação') if registro.get('Situação') else 'Demitido')
+                    
+                    linha_manual = {
                         'Loja': loja_reg,
                         'Nome': nome_func, 
-                        'Situação': registro.get('Situação', 'Demitido (Histórico)'), 
-                        'Dept': registro.get('Dept', 'HISTÓRICO / EX-COLABORADORES'), 
-                        'Função': registro.get('Função', 'Sem Vínculo Atual'),
+                        'Situação': situacao_final, 
+                        'Dept': dept_final, 
+                        'Função': funcao_final,
                         'Horario_Sistema_Real': '-',
                         'Observação': registro.get('Observação', '-'),
                         'Data Abertura': formatar_data_br(registro.get('Data Abertura', '-')),
@@ -246,11 +256,11 @@ def carregar_dados_completos():
                         'Candidato': registro.get('Candidato', '-'),
                         'Data Admissão': formatar_data_br(registro.get('Data Admissão', '-'))
                     }
-                    linhas_historico.append(linha_órfã)
+                    linhas_novas_manuais.append(linha_manual)
             
-            if linhas_historico:
-                df_historico = pd.DataFrame(linhas_historico)
-                df = pd.concat([df, df_historico], ignore_index=True)
+            if len(linhas_novas_manuais) > 0:
+                df_manuais = pd.DataFrame(linhas_novas_manuais)
+                df = pd.concat([df, df_manuais], ignore_index=True)
                 
     except:
         pass
@@ -284,11 +294,10 @@ try:
     df_loja = df_bruto[df_bruto['Loja'] == loja_selecionada].copy()
 
     # =========================================================
-    # 🛠️ BARRA LATERAL (SIDEBAR) - FORMULÁRIO OPERACIONAL ADAPTADO
+    # 🛠️ BARRA LATERAL (SIDEBAR) - FORMULÁRIO OPERACIONAL
     # =========================================================
     st.sidebar.header("📝 Alimentar Informações")
     
-    # Nova chave seletora para permitir digitação de quem está fora da lista
     tipo_registro = st.sidebar.radio("Modo de Operação:", ["Editar Colaborador Existente", "Cadastrar Novo / Não Listado"])
     
     dados_func = None
@@ -310,8 +319,10 @@ try:
         st.sidebar.markdown("---")
         colaborador_final = st.sidebar.text_input("Nome Completo do Colaborador:").strip().upper()
         
-        # Coleta os departamentos e funções existentes para sugerir ou permitir digitação livre
+        # Coleta os departamentos e funções existentes baseados na planilha oficial
         depts_existentes = sorted(list(df_bruto['Dept'].dropna().unique()))
+        if 'HISTÓRICO / EX-COLABORADORES' in depts_existentes:
+            depts_existentes.remove('HISTÓRICO / EX-COLABORADORES')
         dept_final = st.sidebar.selectbox("Departamento:", depts_existentes)
         
         funcoes_existentes = sorted(list(df_bruto[df_bruto['Dept'] == dept_final]['Função'].dropna().unique()))
@@ -320,7 +331,6 @@ try:
         funcao_final = st.sidebar.selectbox("Cargo/Função:", funcoes_existentes)
         
         situacao_final = st.sidebar.selectbox("Situação Inicial:", ["Ativos", "Demitido", "Afastamento", "Férias"])
-        st.sidebar.warning("⚠️ Este colaborador será gravado diretamente no histórico do Sheets.")
 
     if colaborador_final:
         st.sidebar.markdown("---")
@@ -390,7 +400,6 @@ try:
                 nova_data_ad_col = st.sidebar.date_input("Data Admissão:", value=data_ad_default, format="DD/MM/YYYY")
                 nova_data_admissao = nova_data_ad_col.strftime("%d/%m/%Y")
             else:
-                st.sidebar.info("Nenhuma data selecionada para Admissão.")
                 nova_data_admissao = "-"
         else:
             novo_status_rh = st.sidebar.text_input("Status RH:", value=str(dados_func['Status RH']) if dados_func is not None else "-", disabled=True)
@@ -406,7 +415,7 @@ try:
                     "Nome": colaborador_final,
                     "Dept": dept_final,
                     "Funcao": funcao_final,
-                    "Situaçao": situacao_final, # Passando os campos de estrutura para novos cadastros
+                    "Situaçao": situacao_final,
                     "Observacao": nova_obs,
                     "DataAbertura": nova_data_abertura,
                     "Responsavel": novo_responsavel,
