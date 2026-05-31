@@ -135,18 +135,14 @@ if not st.session_state["logado"]:
 # =========================================================
 st.markdown("""
     <style>
-    /* O programa principal volta ao tamanho nativo (100%), eliminando a área ociosa inferior */
     [data-testid="stApp"] {
         zoom: 1.0 !important;
     }
     
-    /* Compactação focada e ultra-enxuta estritamente na tabela de dados */
     .tabela-container { width: 100%; overflow-x: auto; margin-bottom: 15px; }
     .ql-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 11px; color: #ffffff; }
     
-    /* Cabeçalhos de Donos e Colunas */
     .ql-table th { padding: 4px 6px; font-size: 11.5px !important; font-weight: bold; }
-    /* Linhas dos Colaboradores (Respiro linear compacto) */
     .ql-table td { border: 1px solid #444444; padding: 3px 6px; text-align: left; white-space: nowrap; }
     
     .ql-table tr:nth-child(even) { background-color: #1e1e1e; }
@@ -155,7 +151,6 @@ st.markdown("""
     .status-verde { background-color: #15803d !important; color: white !important; font-weight: bold !important; text-align: center !important; }
     .status-vermelho { background-color: #b91c1c !important; color: white !important; font-weight: bold !important; text-align: center !important; }
     
-    /* Otimização de margens superiores e laterais para esticar o painel */
     [data-testid="stAppViewBlockContainer"] { 
         padding-left: 1.2rem !important; 
         padding-right: 1.2rem !important; 
@@ -163,7 +158,6 @@ st.markdown("""
         max-width: 100% !important;
     }
     
-    /* Ajuste de tamanho dos blocos de expander de departamentos */
     .stElementContainer [data-testid="stExpander"] { margin-bottom: -5px !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -214,7 +208,7 @@ def carregar_dados_completos():
                     df.at[idx, 'Observação'] = registro.get('Observação', '-')
                     df.at[idx, 'Data Abertura'] = formatar_data_br(registro.get('Data Abertura', '-'))
                     df.at[idx, 'Responsável'] = registro.get('Responsável', '-')
-                    df.at[idx, 'Horário Contrato'] = registro.get('Horário Contrato', '-')
+                    df.at[idx, 'Horário Contrato'] = str(registro.get('Horário Contrato', '-'))
                     df.at[idx, 'Sexo'] = sexo_exibicao
                     df.at[idx, 'Motivo'] = registro.get('Motivo', '-')
                     df.at[idx, 'Status RH'] = registro.get('Status RH', '-')
@@ -244,7 +238,7 @@ def carregar_dados_completos():
                         'Observação': registro.get('Observação', '-'),
                         'Data Abertura': formatar_data_br(registro.get('Data Abertura', '-')),
                         'Responsável': registro.get('Responsável', '-'),
-                        'Horário Contrato': registro.get('Horário Contrato', '-'),
+                        'Horário Contrato': str(registro.get('Horário Contrato', '-')),
                         'Sexo': sexo_exibicao,
                         'Motivo': registro.get('Motivo', '-'),
                         'Status RH': registro.get('Status RH', '-'),
@@ -319,6 +313,8 @@ try:
             nova_data_abertura = nova_data_ab_col.strftime("%d/%m/%Y")
             
             novo_responsavel = st.sidebar.text_input("Responsável:", value=str(dados_func['Responsável']) if str(dados_func['Responsável']) != "-" else "")
+            
+            # Ajuste 1: Forçado explicitamente como texto puro (String)
             novo_horario_contrato = st.sidebar.text_input("Horário Contrato:", value=str(dados_func['Horário Contrato']) if str(dados_func['Horário Contrato']) != "-" else "")
             
             sexo_exibido_atual = str(dados_func['Sexo']).strip()
@@ -346,13 +342,22 @@ try:
             
             novo_candidato = st.sidebar.text_input("Candidato:", value=str(dados_func['Candidato']) if str(dados_func['Candidato']) != "-" else "")
             
+            # Ajuste 2: Adição de Checkbox para tornar a Data Opcional
             data_ad_atual = str(dados_func['Data Admissão']).strip()
-            try:
-                data_ad_default = datetime.strptime(data_ad_atual, "%d/%m/%Y").date() if data_ad_atual != "-" else date.today()
-            except:
-                data_ad_default = date.today()
-            nova_data_ad_col = st.sidebar.date_input("Data Admissão:", value=data_ad_default, format="DD/MM/YYYY")
-            nova_data_admissao = nova_data_ad_col.strftime("%d/%m/%Y")
+            tem_data_anterior = data_ad_atual != "-"
+            
+            definir_data = st.sidebar.checkbox("Definir data de admissão", value=tem_data_anterior)
+            
+            if definir_data:
+                try:
+                    data_ad_default = datetime.strptime(data_ad_atual, "%d/%m/%Y").date() if tem_data_anterior else date.today()
+                except:
+                    data_ad_default = date.today()
+                nova_data_ad_col = st.sidebar.date_input("Data Admissão:", value=data_ad_default, format="DD/MM/YYYY")
+                nova_data_admissao = nova_data_ad_col.strftime("%d/%m/%Y")
+            else:
+                st.sidebar.info("Nenhuma data selecionada para Admissão.")
+                nova_data_admissao = "-"
         else:
             novo_status_rh = st.sidebar.text_input("Status RH:", value=str(dados_func['Status RH']), disabled=True)
             novo_candidato = st.sidebar.text_input("Candidato:", value=str(dados_func['Candidato']), disabled=True)
@@ -365,7 +370,7 @@ try:
                 "Observacao": nova_obs,
                 "DataAbertura": nova_data_abertura,
                 "Responsavel": novo_responsavel,
-                "HorarioContrato": nova_data_abertura, # Mantido padrão mapeado
+                "HorarioContrato": str(novo_horario_contrato), # Correção do mapeamento de variável e forçado string
                 "Sexo": novo_sexo,
                 "Motivo": novo_motivo,
                 "StatusRH": novo_status_rh,
