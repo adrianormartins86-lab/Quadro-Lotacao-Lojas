@@ -131,7 +131,7 @@ if not st.session_state["logado"]:
     st.stop()
 
 # =========================================================
-# 📊 3. CSS DO DASHBOARD INTERNO
+# 📊 3. CSS DO DASHBOARD INTERNO (ATUALIZADO COM BEGE)
 # =========================================================
 st.markdown("""
     <style>
@@ -158,7 +158,29 @@ st.markdown("""
         max-width: 100% !important;
     }
     
-    .stElementContainer [data-testid="stExpander"] { margin-bottom: -5px !important; }
+    /* 🌟 Customização dos Expanders para Fundo Bege 🌟 */
+    .stElementContainer [data-testid="stExpander"] { 
+        margin-bottom: -5px !important; 
+    }
+    .stElementContainer [data-testid="stExpander"] details {
+        border: 1px solid #dcd7ca !important;
+        border-radius: 6px !important;
+    }
+    /* Estiliza o cabeçalho do expander (Tarja) */
+    .stElementContainer [data-testid="stExpander"] summary {
+        background-color: #f4f1ea !important; /* Cor Bege */
+        color: #121212 !important; /* Texto Preto para Contraste */
+        border-radius: 5px 5px 0px 0px !important;
+    }
+    /* Força os textos internos do resumo do expander a ficarem escuros */
+    .stElementContainer [data-testid="stExpander"] summary p {
+        color: #121212 !important;
+        font-weight: bold !important;
+    }
+    /* Altera o ícone da setinha para preto */
+    .stElementContainer [data-testid="stExpander"] summary svg {
+        fill: #121212 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -487,8 +509,7 @@ try:
             if colaborador_final not in df_dept['Nome'].values:
                 continue
         
-        # 🌟 AJUSTE AQUI: Mudado para True por padrão para vir tudo aberto! 🌟
-        # Se estiver localizando ou auditando, continua aberto. Caso contrário, também começa aberto.
+        # Mantém tudo aberto por padrão
         expander_aberto = True 
         
         with st.expander(f"🏢 DEPARTAMENTO: {dept}", expanded=expander_aberto):
