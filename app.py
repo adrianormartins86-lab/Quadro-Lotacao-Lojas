@@ -131,7 +131,7 @@ if not st.session_state["logado"]:
     st.stop()
 
 # =========================================================
-# 📊 3. CSS DO DASHBOARD INTERNO (CORREÇÃO DE COR DO EXPANDER)
+# 📊 3. CSS DO DASHBOARD INTERNO (MUDANÇA PARA AZUL ESCURO)
 # =========================================================
 st.markdown("""
     <style>
@@ -158,37 +158,37 @@ st.markdown("""
         max-width: 100% !important;
     }
     
-    /* 🛠️ NOVA CORREÇÃO INALTERÁVEL DOS EXPANDERS (BEGE COM TEXTO PRETO) 🛠️ */
+    /* 🛠️ CUSTOMIZAÇÃO DO EXPANDER - PADRÃO AZUL ESCURO ANALISTA 🛠️ */
     div[data-testid="stExpander"] {
         margin-bottom: 6px !important;
-        border: 1px solid #dcd7ca !important;
+        border: 1px solid #244e73 !important;
         border-radius: 6px !important;
         background-color: transparent !important;
     }
     
-    /* Força o cabeçalho clicável do expander a ficar Bege */
+    /* Força o cabeçalho clicável (Tarja) para o Azul do Analista */
     div[data-testid="stExpander"] summary {
-        background-color: #f4f1ea !important;
+        background-color: #244e73 !important; /* Azul Escuro */
         border-radius: 5px 5px 5px 5px !important;
         padding: 10px 15px !important;
     }
     
-    /* Garante que o texto de dentro do cabeçalho fique preto e negrito */
+    /* Textos internos da tarja em branco para contraste perfeito */
     div[data-testid="stExpander"] summary p, 
     div[data-testid="stExpander"] summary span,
     div[data-testid="stExpander"] summary label {
-        color: #121212 !important;
+        color: #ffffff !important;
         font-weight: bold !important;
         font-size: 12.5px !important;
     }
     
-    /* Modifica a cor do ícone de seta do expander para preto */
+    /* Modifica a cor do ícone de seta para branco */
     div[data-testid="stExpander"] summary svg {
-        color: #121212 !important;
-        fill: #121212 !important;
+        color: #ffffff !important;
+        fill: #ffffff !important;
     }
     
-    /* Mantém o container de dentro do expander limpo e escuro para as tabelas */
+    /* Container interno das tabelas */
     div[data-testid="stExpander"] div[data-testid="stVerticalBlock"] {
         background-color: transparent !important;
         padding-top: 5px !important;
@@ -521,6 +521,7 @@ try:
             if colaborador_final not in df_dept['Nome'].values:
                 continue
         
+        # Mantém tudo aberto por padrão
         expander_aberto = True 
         
         with st.expander(f"🏢 DEPARTAMENTO: {dept}", expanded=expander_aberto):
