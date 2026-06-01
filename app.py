@@ -131,7 +131,7 @@ if not st.session_state["logado"]:
     st.stop()
 
 # =========================================================
-# 📊 3. CSS DO DASHBOARD INTERNO (MUDANÇA PARA AZUL ESCURO)
+# 📊 3. CSS DO DASHBOARD INTERNO
 # =========================================================
 st.markdown("""
     <style>
@@ -158,7 +158,6 @@ st.markdown("""
         max-width: 100% !important;
     }
     
-    /* 🛠️ CUSTOMIZAÇÃO DO EXPANDER - PADRÃO AZUL ESCURO ANALISTA 🛠️ */
     div[data-testid="stExpander"] {
         margin-bottom: 6px !important;
         border: 1px solid #244e73 !important;
@@ -166,14 +165,12 @@ st.markdown("""
         background-color: transparent !important;
     }
     
-    /* Força o cabeçalho clicável (Tarja) para o Azul do Analista */
     div[data-testid="stExpander"] summary {
-        background-color: #244e73 !important; /* Azul Escuro */
+        background-color: #244e73 !important;
         border-radius: 5px 5px 5px 5px !important;
         padding: 10px 15px !important;
     }
     
-    /* Textos internos da tarja em branco para contraste perfeito */
     div[data-testid="stExpander"] summary p, 
     div[data-testid="stExpander"] summary span,
     div[data-testid="stExpander"] summary label {
@@ -182,13 +179,11 @@ st.markdown("""
         font-size: 12.5px !important;
     }
     
-    /* Modifica a cor do ícone de seta para branco */
     div[data-testid="stExpander"] summary svg {
         color: #ffffff !important;
         fill: #ffffff !important;
     }
     
-    /* Container interno das tabelas */
     div[data-testid="stExpander"] div[data-testid="stVerticalBlock"] {
         background-color: transparent !important;
         padding-top: 5px !important;
@@ -201,7 +196,7 @@ if st.sidebar.button("🚪 Sair do Sistema"):
     st.rerun()
 
 # =========================================================
-# 📊 4. CARGA DE DADOS HÍBRIDA
+# 📊 4. CARGA DE DADOS HÍBRIDA (COM CONDIÇÃO DE DATA ADMISSÃO)
 # =========================================================
 @st.cache_data(ttl="0d")
 def carregar_dados_completos():
@@ -227,6 +222,7 @@ def carregar_dados_completos():
             dados_sheets = response.json()
             mapeados = set()
 
+            # Passo A: Pessoas que já constam no "banco ql.xlsx" (Sempre aparecem)
             for registro in dados_sheets:
                 nome_func = registro.get('Nome')
                 try:
@@ -257,6 +253,8 @@ def carregar_dados_completos():
                     df.at[idx, 'Possui_Alteracao_Sheets'] = True
                     mapeados.add((nome_func, loja_reg))
 
+            # Passo B (CONDIÇÃO NOVA 🌟): Quem foi inserido manualmente pelo Sheets
+            # Só sobe para a tabela se NÃO tiver uma "Data Admissão" preenchida!
             linhas_novas_manuais = []
             for registro in dados_sheets:
                 nome_func = registro.get('Nome')
@@ -266,6 +264,13 @@ def carregar_dados_completos():
                     loja_reg = 0
                 
                 if (nome_func, loja_reg) not in mapeados:
+                    # Formata a data de admissão vinda do sheets para verificar
+                    data_ad_checar = formatar_data_br(registro.get('Data Admissão', '-'))
+                    
+                    # Se tiver qualquer data válida preenchida (diferente de "-"), ESSE REGISTRO MANUAL SOME 🌟
+                    if data_ad_checar != "-":
+                        continue
+                        
                     sigla_sexo = str(registro.get('Sexo', '-')).strip()
                     sexo_exibicao = MAPA_SIGLA_SEXO.get(sigla_sexo, sigla_sexo)
                     
@@ -288,7 +293,7 @@ def carregar_dados_completos():
                         'Motivo': registro.get('Motivo', '-'),
                         'Status RH': registro.get('Status RH', '-'),
                         'Candidato': registro.get('Candidato', '-'),
-                        'Data Admissão': formatar_data_br(registro.get('Data Admissão', '-')),
+                        'Data Admissão': data_ad_checar,
                         'Possui_Alteracao_Sheets': True
                     }
                     linhas_novas_manuais.append(linha_manual)
@@ -521,7 +526,6 @@ try:
             if colaborador_final not in df_dept['Nome'].values:
                 continue
         
-        # Mantém tudo aberto por padrão
         expander_aberto = True 
         
         with st.expander(f"🏢 DEPARTAMENTO: {dept}", expanded=expander_aberto):
