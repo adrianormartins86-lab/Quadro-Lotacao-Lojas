@@ -57,6 +57,7 @@ OPCOES_SEXO = ["-", "Indiferente", "Masculino", "Feminino"]
 MAPA_SEXO_SIGLA = {"-": "-", "Indiferente": "I", "Masculino": "M", "Feminino": "F"}
 MAPA_SIGLA_SEXO = {"-": "-", "I": "Indiferente", "M": "Masculino", "F": "Feminino"}
 
+# Mantido o padrão atualizado manualmente por você 🌟
 OPCOES_MOTIVO = ["-", "Afastamento","Aumento QL", "Encerramento Contrato Exp.","Função Nova", "Mudança Setor", "Substituição", "Transferência"]
 
 OPCOES_STATUS_RH = [
@@ -319,11 +320,11 @@ try:
     perfil = st.session_state["perfil"]
     loja_fixa = st.session_state["loja_fixa"]
 
-    # 🌟 CABEÇALHO COMPACTADO: Ajuste na largura de colunas e espaçamentos internos
+    # 🌟 CABEÇALHO COMPACTADO
     col_main_logo, col_main_title = st.columns([0.15, 2.85], vertical_alignment="center")
     with col_main_logo:
         if os.path.exists("passaro_logo.png"):
-            st.image("passaro_logo.png", width=65) # Diminuído um pouco para compactar
+            st.image("passaro_logo.png", width=65) 
     with col_main_title:
         st.markdown("<h2 style='margin: 0; padding: 0;'>Molicenter - QL (Quadro de Lotação)</h2>", unsafe_allow_html=True)
         
@@ -510,7 +511,7 @@ try:
 
     st.markdown("---")
 
-    # 🌟 SEÇÃO DE BOTÕES MESTRES E LOCALIZADOR RÁPIDO
+    # SEÇÃO DE BOTÕES MESTRES E LOCALIZADOR RÁPIDO
     st.subheader("📋 Distribuição por Setor e Cargo")
     
     col_busca, col_botoes_expander = st.columns([1.5, 1], vertical_alignment="bottom")
@@ -520,7 +521,6 @@ try:
         focar_colaborador = st.checkbox(f"Focar visualização apenas no colaborador: {colaborador_final}" if colaborador_final else "Focar colaborador selecionado", value=False)
     
     with col_botoes_expander:
-        # Botão dinâmico para abrir ou fechar tudo baseado no estado atual
         if st.session_state["expander_global"]:
             if st.button("📁 Recolher Todos os Departamentos", use_container_width=True):
                 st.session_state["expander_global"] = False
@@ -548,10 +548,13 @@ try:
             if colaborador_final not in df_dept['Nome'].values:
                 continue
         
-        # O estado do expander segue o controle do botão mestre
+        # 🌟 ESTRELA: Calcula dinamicamente o total de funcionários do departamento corrente
+        total_funcionarios_dept = len(df_dept)
+        
         expander_aberto = st.session_state["expander_global"]
         
-        with st.expander(f"🏢 DEPARTAMENTO: {dept}", expanded=expander_aberto):
+        # Título alterado para incluir o indicador (Contagem) no final do nome
+        with st.expander(f"🏢 DEPARTAMENTO: {dept} ({total_funcionarios_dept})", expanded=expander_aberto):
             funcoes = sorted(df_dept['Função'].dropna().unique())
             
             for funcao in funcoes:
