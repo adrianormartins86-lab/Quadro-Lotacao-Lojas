@@ -654,45 +654,47 @@ try:
                 # Renderização da Tabela HTML Dinâmica
                 colspan_analista = 4 if modo_visao_global else 3
                 
+                # A CORREÇÃO ESTÁ AQUI: Removemos os espaços em branco no início das linhas do HTML. 
+                # O Streamlit usa Markdown e, no Markdown, qualquer linha que comece com 4 ou mais espaços
+                # é transformada acidentalmente em um "bloco de código" visível.
                 html_tabela = f"""
-                <div class="tabela-container">
-                    <table class="ql-table">
-                        <thead>
-                            <tr>
-                                <th colspan="{colspan_analista}" style="background-color: #1c3d5a; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: ANALISTA</th>
-                                <th colspan="1" style="background-color: #d97706; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: SUPERVISOR</th>
-                                <th colspan="5" style="background-color: #15803d; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: GERENTE</th>
-                                <th colspan="3" style="background-color: #b91c1c; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: RH</th>
-                            </tr>
-                            <tr style="color: #ffffff; font-weight: bold;">
-                                <th style="background-color: #244e73; border-top: none; text-align: center;">Status</th>
-                """
+<div class="tabela-container">
+<table class="ql-table">
+<thead>
+<tr>
+<th colspan="{colspan_analista}" style="background-color: #1c3d5a; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: ANALISTA</th>
+<th colspan="1" style="background-color: #d97706; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: SUPERVISOR</th>
+<th colspan="5" style="background-color: #15803d; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: GERENTE</th>
+<th colspan="3" style="background-color: #b91c1c; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: RH</th>
+</tr>
+<tr style="color: #ffffff; font-weight: bold;">
+<th style="background-color: #244e73; border-top: none; text-align: center;">Status</th>
+"""
                 
                 if modo_visao_global:
-                    html_tabela += '<th style="background-color: #244e73; border-top: none; text-align: center;">Loja</th>'
+                    html_tabela += '<th style="background-color: #244e73; border-top: none; text-align: center;">Loja</th>\n'
                     
-                html_tabela += """
-                                <th style="background-color: #244e73; border-top: none; text-align: center;">Nome do Colaborador</th>
-                                <th style="background-color: #244e73; border-top: none; text-align: center;">Horário Sistema</th>
-                                <th style="background-color: #b36205; border-top: none; text-align: center;">Observação</th>
-                                <th style="background-color: #116631; border-top: none; text-align: center;">Data Abertura</th>
-                                <th style="background-color: #116631; border-top: none; text-align: center;">Responsável</th>
-                                <th style="background-color: #116631; border-top: none; text-align: center;">Horário Contrato</th>
-                                <th style="background-color: #116631; border-top: none; text-align: center;">Sexo</th>
-                                <th style="background-color: #116631; border-top: none; text-align: center;">Motivo</th>
-                                <th style="background-color: #941616; border-top: none; text-align: center;">Status RH</th>
-                                <th style="background-color: #941616; border-top: none; text-align: center;">Candidato</th>
-                                <th style="background-color: #941616; border-top: none; text-align: center;">Data Admissão</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                """
+                html_tabela += """<th style="background-color: #244e73; border-top: none; text-align: center;">Nome do Colaborador</th>
+<th style="background-color: #244e73; border-top: none; text-align: center;">Horário Sistema</th>
+<th style="background-color: #b36205; border-top: none; text-align: center;">Observação</th>
+<th style="background-color: #116631; border-top: none; text-align: center;">Data Abertura</th>
+<th style="background-color: #116631; border-top: none; text-align: center;">Responsável</th>
+<th style="background-color: #116631; border-top: none; text-align: center;">Horário Contrato</th>
+<th style="background-color: #116631; border-top: none; text-align: center;">Sexo</th>
+<th style="background-color: #116631; border-top: none; text-align: center;">Motivo</th>
+<th style="background-color: #941616; border-top: none; text-align: center;">Status RH</th>
+<th style="background-color: #941616; border-top: none; text-align: center;">Candidato</th>
+<th style="background-color: #941616; border-top: none; text-align: center;">Data Admissão</th>
+</tr>
+</thead>
+<tbody>
+"""
                 
                 for _, row in df_filtrado.iterrows():
-                    html_tabela += "<tr>"
+                    html_tabela += "<tr>\n"
                     
                     classe_status = obter_classe_status(row['Situação'])
-                    html_tabela += f"<td {classe_status}>{row['Situação']}</td>"
+                    html_tabela += f"<td {classe_status}>{row['Situação']}</td>\n"
                     
                     for col_nome in df_filtrado.columns[1:]:
                         val_original = row[col_nome]
@@ -702,17 +704,16 @@ try:
                                 val_formatado = f"{int(float(str(val_original))):02d}"
                             except:
                                 val_formatado = str(val_original)
-                            html_tabela += f'<td class="celula-loja">{val_formatado}</td>'
+                            html_tabela += f'<td class="celula-loja">{val_formatado}</td>\n'
                         else:
-                            html_tabela += f"<td>{val_original}</td>"
+                            html_tabela += f"<td>{val_original}</td>\n"
                             
-                    html_tabela += "</tr>"
+                    html_tabela += "</tr>\n"
                     
-                html_tabela += """
-                        </tbody>
-                    </table>
-                </div>
-                """
+                html_tabela += """</tbody>
+</table>
+</div>
+"""
                 st.markdown(html_tabela, unsafe_allow_html=True)
 
 except Exception as e:
