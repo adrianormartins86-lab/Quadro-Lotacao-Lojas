@@ -642,7 +642,7 @@ try:
                 
                 # Injeta o cabeçalho "Loja" se estiver em modo global antes do nome
                 if modo_visao_global:
-                    html_tabela += '<th style="background-color: #244e73; border-top: none; text-align: center;">Lj</th>'
+                    html_tabela += '<th style="background-color: #244e73; border-top: none; text-align: center;">Loja</th>'
                     
                 html_tabela += """
                                 <th style="background-color: #244e73; border-top: none; text-align: center;">Nome do Colaborador</th>
