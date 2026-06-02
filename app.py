@@ -69,7 +69,7 @@ OPCOES_STATUS_RH = [
     "Triagem de Curriculuns", "Validado pelo gerente", "Desistencia Candidato"
 ]
 
-# 🌟 NOVA LISTA: Opções predefinidas para o Horário de Contrato
+# 🌟 LISTA DE HORÁRIOS
 OPCOES_HORARIO = [
     "-", "ART 62 CLT", "SG-SB 05:00-10:00 11:15-13:35", "SG-SB 05:50-11:30 13:20-15:00", 
     "SG-SB 06:00-10:00 11:10-14:30", "SG-SB 06:00-10:00 12:00-15:20", "SG-SB 06:00-11:00 12:15-14:35", 
@@ -170,7 +170,7 @@ st.markdown("""
         zoom: 1.0 !important;
     }
     
-    /* 🌟 Redução radical do espaço em branco no topo do cabeçalho */
+    /* Redução radical do espaço em branco no topo do cabeçalho */
     [data-testid="stAppViewBlockContainer"] { 
         padding-left: 1.2rem !important; 
         padding-right: 1.2rem !important; 
@@ -290,7 +290,7 @@ def carregar_dados_completos():
                     df.at[idx, 'Possui_Alteracao_Sheets'] = True
                     mapeados.add((nome_func, loja_reg))
 
-            # Passo B (CONDIÇÃO NOVA 🌟): Quem foi inserido manualmente pelo Sheets
+            # Passo B: Quem foi inserido manualmente pelo Sheets
             linhas_novas_manuais = []
             for registro in dados_sheets:
                 nome_func = registro.get('Nome')
@@ -358,16 +358,31 @@ try:
     st.sidebar.markdown(f"**Nível:** `{perfil.upper()}`")
     st.markdown("<hr style='margin-top: 2px; margin-bottom: 8px;'>", unsafe_allow_html=True)
 
+    # 🌟 4.1 LÓGICA DE SELEÇÃO DE LOJA COM VISÕES AGREGADAS
     if loja_fixa is not None:
         loja_selecionada = loja_fixa
         st.info(f"🏪 Modo de Visualização Restrito: **Loja {loja_selecionada:02d}**")
+        df_loja = df_bruto[df_bruto['Loja'] == loja_selecionada].copy()
     else:
-        lojas_disponiveis = sorted([int(l) for l in df_bruto['Loja'].unique() if int(l) > 0])
+        lojas_reais = sorted([int(l) for l in df_bruto['Loja'].unique() if int(l) > 0])
+        opcoes_selecao = ["Total Lojas", "Total Rede"] + lojas_reais
+        
         st.markdown("<div style='max-width: 300px;'>", unsafe_allow_html=True)
-        loja_selecionada = st.selectbox("Selecione a Loja para Análise:", lojas_disponiveis, format_func=lambda x: f"Loja {int(x):02d}")
+        loja_selecionada = st.selectbox(
+            "Selecione a Loja para Análise:", 
+            opcoes_selecao, 
+            format_func=lambda x: f"Loja {int(x):02d}" if isinstance(x, int) else str(x)
+        )
         st.markdown("</div>", unsafe_allow_html=True)
 
-    df_loja = df_bruto[df_bruto['Loja'] == loja_selecionada].copy()
+        if loja_selecionada == "Total Lojas":
+            df_loja = df_bruto[df_bruto['Loja'].isin([1, 2, 3, 4, 5, 6, 7, 8])].copy()
+            st.info("📊 Exibindo dados agregados das **Lojas 01 a 08**.")
+        elif loja_selecionada == "Total Rede":
+            df_loja = df_bruto[df_bruto['Loja'] > 0].copy()
+            st.info("🌐 Exibindo dados agregados de **Toda a Rede Molicenter**.")
+        else:
+            df_loja = df_bruto[df_bruto['Loja'] == loja_selecionada].copy()
 
     # =========================================================
     # 🛠️ BARRA LATERAL (SIDEBAR) - FORMULÁRIO OPERACIONAL
@@ -433,7 +448,6 @@ try:
             val_resp_default = str(dados_func['Responsável']) if (dados_func is not None and str(dados_func['Responsável']) != "-") else ""
             novo_responsavel = st.sidebar.text_input("Responsável:", value=val_resp_default)
             
-            # 🌟 CHAVE ALTERADA: Agora "Horário Contrato" usa st.sidebar.selectbox com index automático
             val_horario_default = str(dados_func['Horário Contrato']).strip() if dados_func is not None else "-"
             idx_horario = OPCOES_HORARIO.index(val_horario_default) if val_horario_default in OPCOES_HORARIO else 0
             novo_horario_contrato = st.sidebar.selectbox("Horário Contrato:", OPCOES_HORARIO, index=idx_horario)
@@ -449,10 +463,7 @@ try:
         else:
             nova_data_abertura = st.sidebar.text_input("Data Abertura:", value=str(dados_func['Data Abertura']) if dados_func is not None else "-", disabled=True)
             novo_responsavel = st.sidebar.text_input("Responsável:", value=str(dados_func['Responsável']) if dados_func is not None else "-", disabled=True)
-            
-            # Campo desabilitado para outros níveis também refletindo o formato texto do valor selecionado
             novo_horario_contrato = st.sidebar.text_input("Horário Contrato:", value=str(dados_func['Horário Contrato']) if dados_func is not None else "-", disabled=True)
-            
             novo_sexo_exibido = st.sidebar.text_input("Sexo:", value=str(dados_func['Sexo']) if dados_func is not None else "-", disabled=True)
             novo_sexo = MAPA_SEXO_SIGLA.get(novo_sexo_exibido, "-")
             novo_motivo = st.sidebar.text_input("Motivo:", value=str(dados_func['Motivo']) if dados_func is not None else "-", disabled=True)
@@ -490,8 +501,11 @@ try:
             if tipo_registro == "Cadastrar Novo / Não Listado" and not colaborador_final:
                 st.sidebar.error("Erro: O nome do colaborador não pode ficar em branco.")
             else:
+                # 🌟 Proteção: Se estiver salvando a partir de uma visão agregada ("Total"), pega a loja original do cadastro do colaborador
+                loja_salvamento = int(dados_func['Loja']) if (dados_func is not None) else (int(loja_selecionada) if isinstance(loja_selecionada, int) else 1)
+                
                 payload = {
-                    "Loja": int(loja_selecionada),
+                    "Loja": loja_salvamento,
                     "Nome": colaborador_final,
                     "Dept": dept_final,
                     "Funcao": funcao_final,
@@ -526,7 +540,10 @@ try:
     
     col_titulo, col_filtro_sheets = st.columns([1.5, 1], vertical_alignment="center")
     with col_titulo:
-        st.markdown(f"### 🏪 Quadro de Funcionários - Loja {int(loja_selecionada):02d}")
+        # 🌟 Título dinâmico que se adapta tanto às strings ("Total Lojas") quanto ao formato numérico padrão das lojas únicas.
+        texto_titulo = f"Loja {int(loja_selecionada):02d}" if isinstance(loja_selecionada, int) else str(loja_selecionada)
+        st.markdown(f"### 🏪 Quadro de Funcionários - {texto_titulo}")
+        
     with col_filtro_sheets:
         apenas_alterados = st.checkbox("📋 Visualizar apenas registros alterados/inseridos (Geral)", value=False)
 
@@ -570,7 +587,7 @@ try:
     departamentos = sorted(df_exibicao['Dept'].dropna().unique())
 
     if not departamentos:
-        st.warning("Nenhum registro encontrado com dados preenchidos nesta loja.")
+        st.warning("Nenhum registro encontrado com dados preenchidos nesta loja/visão.")
 
     for dept in departamentos:
         df_dept = df_exibicao[df_exibicao['Dept'] == dept]
