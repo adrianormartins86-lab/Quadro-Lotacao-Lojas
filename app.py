@@ -6,6 +6,13 @@ from datetime import datetime, date
 import os
 
 # =========================================================
+# 🌐 RASTREAMENTO DE SESSÕES ATIVAS EM TEMPO REAL
+# =========================================================
+@st.cache_resource
+def obter_rastreador_sessoes():
+    return {}  # Dicionário global compartilhado: { "usuario@email.com": datetime_da_atividade }
+
+# =========================================================
 # 🛠️ 1. CONFIGURAÇÕES INICIAIS E FUNÇÕES AUXILIARES VISUAIS
 # =========================================================
 
@@ -341,6 +348,11 @@ def carregar_dados_completos():
 try:
     df_bruto = carregar_dados_completos()
 
+    # 🌟 ATIVIDADE COLETIVA EM TEMPO REAL 🌟
+    sessoes_globais = obter_rastreador_sessoes()
+    if st.session_state["logado"]:
+        sessoes_globais[st.session_state["usuario"]] = datetime.now()
+
     perfil = st.session_state["perfil"]
     loja_fixa = st.session_state["loja_fixa"]
 
@@ -354,6 +366,23 @@ try:
     st.sidebar.markdown(f"**Usuário:** `{st.session_state['usuario']}`")
     st.sidebar.markdown(f"**Nível:** `{perfil.upper()}`")
     st.markdown("<hr style='margin-top: 2px; margin-bottom: 8px;'>", unsafe_allow_html=True)
+
+    # 🌟 PAINEL DE MONITORAMENTO (EXCLUSIVO DO ANALISTA) 🌟
+    if perfil == "analista":
+        agora_painel = datetime.now()
+        usuarios_online = [
+            user for user, ultima_atividade in sessoes_globais.items()
+            if (agora_painel - ultima_atividade).total_seconds() < 600
+        ]
+        st.markdown(
+            f"""
+            <div style="background-color: #1e293b; padding: 12px; border-radius: 6px; border: 1px solid #334155; margin-bottom: 15px;">
+                <span style="color: #38bdf8; font-weight: bold;">🟢 Usuários online no Sistema (Últimos 10 min):</span>
+                <span style="color: #ffffff; margin-left: 8px;">{', '.join([f'<b>{u}</b>' for u in usuarios_online])}</span>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
 
     # 🏪 LÓGICA DE SELEÇÃO DE LOJA COM VISÕES AGREGADAS
     if loja_fixa is not None:
@@ -623,7 +652,6 @@ try:
                     df_filtrado = df_funcao[colunas_selecionadas]
                 
                 # Renderização da Tabela HTML Dinâmica
-                # Ajusta o 'colspan' do dono Analista dependendo se a coluna Loja existe ou não
                 colspan_analista = 4 if modo_visao_global else 3
                 
                 html_tabela = f"""
@@ -640,7 +668,6 @@ try:
                                 <th style="background-color: #244e73; border-top: none; text-align: center;">Status</th>
                 """
                 
-                # Injeta o cabeçalho "Loja" se estiver em modo global antes do nome
                 if modo_visao_global:
                     html_tabela += '<th style="background-color: #244e73; border-top: none; text-align: center;">Loja</th>'
                     
@@ -664,15 +691,12 @@ try:
                 for _, row in df_filtrado.iterrows():
                     html_tabela += "<tr>"
                     
-                    # 1. Coluna de Status
                     classe_status = obter_classe_status(row['Situação'])
                     html_tabela += f"<td {classe_status}>{row['Situação']}</td>"
                     
-                    # 2. Varre o restante das colunas mapeadas
                     for col_nome in df_filtrado.columns[1:]:
                         val_original = row[col_nome]
                         
-                        # Se for a coluna de Loja, aplica a formatação com 2 dígitos centralizada
                         if col_nome == 'Loja':
                             try:
                                 val_formatado = f"{int(float(str(val_original))):02d}"
