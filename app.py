@@ -69,7 +69,6 @@ OPCOES_STATUS_RH = [
     "Triagem de Curriculuns", "Validado pelo gerente", "Desistencia Candidato"
 ]
 
-# 🌟 LISTA DE HORÁRIOS
 OPCOES_HORARIO = [
     "-", "ART 62 CLT", "SG-SB 05:00-10:00 11:15-13:35", "SG-SB 05:50-11:30 13:20-15:00", 
     "SG-SB 06:00-10:00 11:10-14:30", "SG-SB 06:00-10:00 12:00-15:20", "SG-SB 06:00-11:00 12:15-14:35", 
@@ -170,7 +169,6 @@ st.markdown("""
         zoom: 1.0 !important;
     }
     
-    /* Redução radical do espaço em branco no topo do cabeçalho */
     [data-testid="stAppViewBlockContainer"] { 
         padding-left: 1.2rem !important; 
         padding-right: 1.2rem !important; 
@@ -178,7 +176,6 @@ st.markdown("""
         max-width: 100% !important;
     }
     
-    /* Remove padding default do bloco principal do Streamlit */
     [data-testid="stVerticalBlock"] {
         gap: 0.5rem !important;
     }
@@ -194,6 +191,9 @@ st.markdown("""
     
     .status-verde { background-color: #15803d !important; color: white !important; font-weight: bold !important; text-align: center !important; }
     .status-vermelho { background-color: #b91c1c !important; color: white !important; font-weight: bold !important; text-align: center !important; }
+    
+    /* Centraliza o número da loja */
+    .celula-loja { text-align: center !important; font-weight: bold !important; color: #38bdf8 !important; }
     
     div[data-testid="stExpander"] {
         margin-bottom: 6px !important;
@@ -233,7 +233,7 @@ if st.sidebar.button("🚪 Sair do Sistema"):
     st.rerun()
 
 # =========================================================
-# 📊 4. CARGA DE DADOS HÍBRIDA (COM CONDIÇÃO DE DATA ADMISSÃO)
+# 📊 4. CARGA DE DADOS HÍBRIDA
 # =========================================================
 @st.cache_data(ttl="0d")
 def carregar_dados_completos():
@@ -259,7 +259,6 @@ def carregar_dados_completos():
             dados_sheets = response.json()
             mapeados = set()
 
-            # Passo A: Pessoas que já constam no "banco ql.xlsx" (Sempre aparecem)
             for registro in dados_sheets:
                 nome_func = registro.get('Nome')
                 try:
@@ -290,7 +289,6 @@ def carregar_dados_completos():
                     df.at[idx, 'Possui_Alteracao_Sheets'] = True
                     mapeados.add((nome_func, loja_reg))
 
-            # Passo B: Quem foi inserido manualmente pelo Sheets
             linhas_novas_manuais = []
             for registro in dados_sheets:
                 nome_func = registro.get('Nome')
@@ -346,7 +344,6 @@ try:
     perfil = st.session_state["perfil"]
     loja_fixa = st.session_state["loja_fixa"]
 
-    # CABEÇALHO COMPACTADO
     col_main_logo, col_main_title = st.columns([0.15, 2.85], vertical_alignment="center")
     with col_main_logo:
         if os.path.exists("passaro_logo.png"):
@@ -358,11 +355,12 @@ try:
     st.sidebar.markdown(f"**Nível:** `{perfil.upper()}`")
     st.markdown("<hr style='margin-top: 2px; margin-bottom: 8px;'>", unsafe_allow_html=True)
 
-    # 🌟 4.1 LÓGICA DE SELEÇÃO DE LOJA COM VISÕES AGREGADAS
+    # 🏪 LÓGICA DE SELEÇÃO DE LOJA COM VISÕES AGREGADAS
     if loja_fixa is not None:
         loja_selecionada = loja_fixa
         st.info(f"🏪 Modo de Visualização Restrito: **Loja {loja_selecionada:02d}**")
         df_loja = df_bruto[df_bruto['Loja'] == loja_selecionada].copy()
+        modo_visao_global = False
     else:
         lojas_reais = sorted([int(l) for l in df_bruto['Loja'].unique() if int(l) > 0])
         opcoes_selecao = ["Total Lojas", "Total Rede"] + lojas_reais
@@ -378,17 +376,19 @@ try:
         if loja_selecionada == "Total Lojas":
             df_loja = df_bruto[df_bruto['Loja'].isin([1, 2, 3, 4, 5, 6, 7, 8])].copy()
             st.info("📊 Exibindo dados agregados das **Lojas 01 a 08**.")
+            modo_visao_global = True
         elif loja_selecionada == "Total Rede":
             df_loja = df_bruto[df_bruto['Loja'] > 0].copy()
             st.info("🌐 Exibindo dados agregados de **Toda a Rede Molicenter**.")
+            modo_visao_global = True
         else:
             df_loja = df_bruto[df_bruto['Loja'] == loja_selecionada].copy()
+            modo_visao_global = False
 
     # =========================================================
     # 🛠️ BARRA LATERAL (SIDEBAR) - FORMULÁRIO OPERACIONAL
     # =========================================================
     st.sidebar.header("📝 Alimentar Informações")
-    
     tipo_registro = st.sidebar.radio("Modo de Operação:", ["Editar Colaborador Existente", "Cadastrar Novo / Não Listado"])
     
     dados_func = None
@@ -425,7 +425,6 @@ try:
     if colaborador_final:
         st.sidebar.markdown("---")
         
-        # 🔸 SUPERVISOR
         st.sidebar.subheader("🔸 Supervisor")
         val_obs_default = str(dados_func['Observação']) if (dados_func is not None and str(dados_func['Observação']) != "-") else ""
         if perfil in ["analista", "rh", "supervisor"]:
@@ -434,7 +433,6 @@ try:
             st.sidebar.text_input("Observação:", value=val_obs_default if val_obs_default else "-", disabled=True)
             nova_obs = val_obs_default if val_obs_default else "-"
         
-        # 🔹 GERENTE
         st.sidebar.subheader("🔹 Gerente")
         if perfil in ["analista", "rh", "supervisor", "gerente"]:
             data_ab_atual = str(dados_func['Data Abertura']).strip() if dados_func is not None else "-"
@@ -468,7 +466,6 @@ try:
             novo_sexo = MAPA_SEXO_SIGLA.get(novo_sexo_exibido, "-")
             novo_motivo = st.sidebar.text_input("Motivo:", value=str(dados_func['Motivo']) if dados_func is not None else "-", disabled=True)
         
-        # 🔺 RH
         st.sidebar.subheader("🔺 Recursos Humanos (RH)")
         if perfil in ["analista", "rh"]:
             status_atual = str(dados_func['Status RH']).strip() if dados_func is not None else "-"
@@ -501,7 +498,6 @@ try:
             if tipo_registro == "Cadastrar Novo / Não Listado" and not colaborador_final:
                 st.sidebar.error("Erro: O nome do colaborador não pode ficar em branco.")
             else:
-                # 🌟 Proteção: Se estiver salvando a partir de uma visão agregada ("Total"), pega a loja original do cadastro do colaborador
                 loja_salvamento = int(dados_func['Loja']) if (dados_func is not None) else (int(loja_selecionada) if isinstance(loja_selecionada, int) else 1)
                 
                 payload = {
@@ -537,10 +533,8 @@ try:
     # =========================================================
     # 🏪 5. INDICADORES E MATRIZ VISUAL CENTRAL
     # =========================================================
-    
     col_titulo, col_filtro_sheets = st.columns([1.5, 1], vertical_alignment="center")
     with col_titulo:
-        # 🌟 Título dinâmico que se adapta tanto às strings ("Total Lojas") quanto ao formato numérico padrão das lojas únicas.
         texto_titulo = f"Loja {int(loja_selecionada):02d}" if isinstance(loja_selecionada, int) else str(loja_selecionada)
         st.markdown(f"### 🏪 Quadro de Funcionários - {texto_titulo}")
         
@@ -559,9 +553,7 @@ try:
 
     st.markdown("---")
 
-    # SEÇÃO DE BOTÕES MESTRES E LOCALIZADOR RÁPIDO
     st.subheader("📋 Distribuição por Setor e Cargo")
-    
     col_busca, col_botoes_expander = st.columns([1.5, 1], vertical_alignment="bottom")
     
     with col_busca:
@@ -611,31 +603,48 @@ try:
                 
                 st.markdown(f"**🔹 Cargo: {funcao}**")
                 
-                if focar_colaborador and colaborador_final:
-                    df_filtrado = df_funcao[df_funcao['Nome'] == colaborador_final][[
-                        'Situação', 'Nome', 'Horario_Sistema_Real', 'Observação',
+                # 🌟 LÓGICA DA COLUNA ADICIONAL DINÂMICA (LOJA)
+                if modo_visao_global:
+                    colunas_selecionadas = [
+                        'Situação', 'Loja', 'Nome', 'Horario_Sistema_Real', 'Observação',
                         'Data Abertura', 'Responsável', 'Horário Contrato', 'Sexo', 'Motivo',
                         'Status RH', 'Candidato', 'Data Admissão'
-                    ]]
+                    ]
                 else:
-                    df_filtrado = df_funcao[[
+                    colunas_selecionadas = [
                         'Situação', 'Nome', 'Horario_Sistema_Real', 'Observação',
                         'Data Abertura', 'Responsável', 'Horário Contrato', 'Sexo', 'Motivo',
                         'Status RH', 'Candidato', 'Data Admissão'
-                    ]]
+                    ]
+
+                if focar_colaborador and colaborador_final:
+                    df_filtrado = df_funcao[df_funcao['Nome'] == colaborador_final][colunas_selecionadas]
+                else:
+                    df_filtrado = df_funcao[colunas_selecionadas]
+                
+                # Renderização da Tabela HTML Dinâmica
+                # Ajusta o 'colspan' do dono Analista dependendo se a coluna Loja existe ou não
+                colspan_analista = 4 if modo_visao_global else 3
                 
                 html_tabela = f"""
                 <div class="tabela-container">
                     <table class="ql-table">
                         <thead>
                             <tr>
-                                <th colspan="3" style="background-color: #1c3d5a; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: ANALISTA</th>
+                                <th colspan="{colspan_analista}" style="background-color: #1c3d5a; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: ANALISTA</th>
                                 <th colspan="1" style="background-color: #d97706; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: SUPERVISOR</th>
                                 <th colspan="5" style="background-color: #15803d; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: GERENTE</th>
                                 <th colspan="3" style="background-color: #b91c1c; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: RH</th>
                             </tr>
                             <tr style="color: #ffffff; font-weight: bold;">
                                 <th style="background-color: #244e73; border-top: none; text-align: center;">Status</th>
+                """
+                
+                # Injeta o cabeçalho "Loja" se estiver em modo global antes do nome
+                if modo_visao_global:
+                    html_tabela += '<th style="background-color: #244e73; border-top: none; text-align: center;">Lj</th>'
+                    
+                html_tabela += """
                                 <th style="background-color: #244e73; border-top: none; text-align: center;">Nome do Colaborador</th>
                                 <th style="background-color: #244e73; border-top: none; text-align: center;">Horário Sistema</th>
                                 <th style="background-color: #b36205; border-top: none; text-align: center;">Observação</th>
@@ -654,11 +663,25 @@ try:
                 
                 for _, row in df_filtrado.iterrows():
                     html_tabela += "<tr>"
+                    
+                    # 1. Coluna de Status
                     classe_status = obter_classe_status(row['Situação'])
                     html_tabela += f"<td {classe_status}>{row['Situação']}</td>"
                     
-                    for col_nome in row.index[1:]:
-                        html_tabela += f"<td>{row[col_nome]}</td>"
+                    # 2. Varre o restante das colunas mapeadas
+                    for col_nome in df_filtrado.columns[1:]:
+                        val_original = row[col_nome]
+                        
+                        # Se for a coluna de Loja, aplica a formatação com 2 dígitos centralizada
+                        if col_nome == 'Loja':
+                            try:
+                                val_formatado = f"{int(float(str(val_original))):02d}"
+                            except:
+                                val_formatado = str(val_original)
+                            html_tabela += f'<td class="celula-loja">{val_formatado}</td>'
+                        else:
+                            html_tabela += f"<td>{val_original}</td>"
+                            
                     html_tabela += "</tr>"
                     
                 html_tabela += """
