@@ -4,6 +4,7 @@ import requests
 import json
 from datetime import datetime, date
 import os
+import time # INCLUÍDO PARA A TRAVA DE TEMPO
 
 # =========================================================
 # 🌐 RASTREAMENTO DE SESSÕES ATIVAS EM TEMPO REAL
@@ -523,41 +524,46 @@ try:
             novo_candidato = st.sidebar.text_input("Candidato:", value=str(dados_func['Candidato']) if dados_func is not None else "-", disabled=True)
             nova_data_admissao = st.sidebar.text_input("Data Admissão:", value=str(dados_func['Data Admissão']) if dados_func is not None else "-", disabled=True)
         
+        # =========================================================
+        # 🚀 BLOCO DE SALVAMENTO ATUALIZADO (TRAVA COM SPINNER)
+        # =========================================================
         if st.sidebar.button("💾 Salvar Alterações", use_container_width=True):
             if tipo_registro == "Cadastrar Novo / Não Listado" and not colaborador_final:
                 st.sidebar.error("Erro: O nome do colaborador não pode ficar em branco.")
             else:
-                loja_salvamento = int(dados_func['Loja']) if (dados_func is not None) else (int(loja_selecionada) if isinstance(loja_selecionada, int) else 1)
-                
-                payload = {
-                    "Loja": loja_salvamento,
-                    "Nome": colaborador_final,
-                    "Dept": dept_final,
-                    "Funcao": funcao_final,
-                    "Situaçao": situacao_final,
-                    "Observacao": nova_obs,
-                    "DataAbertura": nova_data_abertura,
-                    "Responsavel": novo_responsavel,
-                    "HorarioContrato": str(novo_horario_contrato),
-                    "Sexo": novo_sexo,
-                    "Motivo": novo_motivo,
-                    "StatusRH": novo_status_rh,
-                    "Candidato": novo_candidato,
-                    "DataAdmissao": nova_data_admissao,
-                    "Usuario": st.session_state["usuario"]
-                }
-                
-                try:
-                    headers = {'Content-Type': 'application/json'}
-                    res = requests.post(URL_API_SHEETS, data=json.dumps(payload), headers=headers, timeout=10)
-                    if res.status_code == 200:
-                        st.sidebar.success("Dados salvos com sucesso!")
-                        st.cache_data.clear()
-                        st.rerun()
-                    else:
-                        st.sidebar.error("Erro ao comunicar com a API do Sheets.")
-                except Exception as e:
-                    st.sidebar.error(f"Erro de conexão: {e}")
+                with st.spinner("⏳ Processando e enviando para o Google Sheets..."):
+                    loja_salvamento = int(dados_func['Loja']) if (dados_func is not None) else (int(loja_selecionada) if isinstance(loja_selecionada, int) else 1)
+                    
+                    payload = {
+                        "Loja": loja_salvamento,
+                        "Nome": colaborador_final,
+                        "Dept": dept_final,
+                        "Funcao": funcao_final,
+                        "Situaçao": situacao_final,
+                        "Observacao": nova_obs,
+                        "DataAbertura": nova_data_abertura,
+                        "Responsavel": novo_responsavel,
+                        "HorarioContrato": str(novo_horario_contrato),
+                        "Sexo": novo_sexo,
+                        "Motivo": novo_motivo,
+                        "StatusRH": novo_status_rh,
+                        "Candidato": novo_candidato,
+                        "DataAdmissao": nova_data_admissao,
+                        "Usuario": st.session_state["usuario"]
+                    }
+                    
+                    try:
+                        headers = {'Content-Type': 'application/json'}
+                        res = requests.post(URL_API_SHEETS, data=json.dumps(payload), headers=headers, timeout=10)
+                        if res.status_code == 200:
+                            st.sidebar.success("✅ Dados salvos com sucesso!")
+                            st.cache_data.clear()
+                            time.sleep(1.5) # Dá tempo para o usuário ler o sucesso antes da tela atualizar e limpar tudo
+                            st.rerun()
+                        else:
+                            st.sidebar.error("Erro ao comunicar com a API do Sheets.")
+                    except Exception as e:
+                        st.sidebar.error(f"Erro de conexão: {e}")
 
     # =========================================================
     # 🏪 5. INDICADORES E MATRIZ VISUAL CENTRAL
