@@ -295,10 +295,6 @@ def carregar_dados_completos():
                 
                 if (nome_func, loja_reg) not in mapeados:
                     data_ad_checar = formatar_data_br(registro.get('Data Admissão', '-'))
-                    # ==============================================================
-                    # BUG FIX: Removido o 'if data_ad_checar != "-": continue'
-                    # Agora TODOS os registros do Sheets entram no sistema!
-                    # ==============================================================
                     
                     sigla_sexo = str(registro.get('Sexo', '-')).strip()
                     sexo_exibicao = MAPA_SIGLA_SEXO.get(sigla_sexo, sigla_sexo)
@@ -497,9 +493,33 @@ try:
             
             submit_button = st.form_submit_button("💾 Salvar Alterações", use_container_width=True, type="primary")
 
+        # ==============================================================
+        # 🔒 VALIDAÇÃO DE CAMPOS (TRAVA DE SALVAMENTO PARA TODOS)
+        # ==============================================================
         if submit_button:
+            # Prepara os valores para validação (garante que sejam strings limpas)
+            val_data = str(nova_data_abertura).strip()
+            val_resp = str(novo_responsavel).strip()
+            val_horario = str(novo_horario_contrato).strip()
+            val_sexo = str(novo_sexo).strip()
+            val_motivo = str(novo_motivo).strip()
+
+            # Dicionário mapeando apenas as colunas do "DONO: GERENTE"
+            campos_validacao_gerente = {
+                "Data Abertura": val_data,
+                "Responsável": val_resp,
+                "Horário Contrato": val_horario,
+                "Sexo": val_sexo,
+                "Motivo": val_motivo
+            }
+            
+            # Checa se há campos essenciais com valores vazios ou não preenchidos ("-")
+            campos_faltantes = [nome for nome, valor in campos_validacao_gerente.items() if valor in ["-", "", "None", "nan"]]
+
             if tipo_registro == "Cadastrar Novo / Não Listado" and not colaborador_final:
                 st.sidebar.error("Erro: O nome do colaborador não pode ficar em branco.")
+            elif len(campos_faltantes) > 0:
+                st.sidebar.error(f"⚠️ Atenção! Preencha os campos obrigatórios do Gerente: **{', '.join(campos_faltantes)}**")
             else:
                 with st.spinner("⏳ Processando e enviando para o Google Sheets..."):
                     loja_salvamento = int(dados_func['Loja']) if (dados_func is not None) else (int(loja_selecionada) if isinstance(loja_selecionada, int) else 1)
