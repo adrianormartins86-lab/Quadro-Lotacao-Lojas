@@ -564,11 +564,8 @@ try:
     
     # === PAINEL DE CONTROLE E VISUALIZAÇÃO ===
     st.subheader("📋 Painel de Controle e Visualização")
-    
-    # 1. Focar Colaborador
-    focar_colaborador = st.checkbox(f"🔍 Focar visualização apenas no colaborador: {colaborador_final}" if colaborador_final else "🔍 Focar colaborador selecionado", value=False)
-    
-    # 2. Relatório de Efetividade (Apenas RH e Analista)
+
+    # 1. Relatório de Efetividade (Apenas RH e Analista)
     mostrar_relatorio = False
     if perfil in ["analista", "rh"]:
         mostrar_relatorio = st.checkbox("📊 Visualizar Relatório de Efetividade (Vagas Abertas vs Concluídas)", value=False)
@@ -580,6 +577,10 @@ try:
         else:
             st.session_state["expander_global"] = False
             
+    
+    # 2. Focar Colaborador
+    focar_colaborador = st.checkbox(f"🔍 Focar visualização apenas no colaborador: {colaborador_final}" if colaborador_final else "🔍 Focar colaborador selecionado", value=False)
+
     # 3. Apenas Alterados
     apenas_alterados = st.checkbox(
         "📝 Visualizar apenas registros alterados/inseridos (Geral)", 
