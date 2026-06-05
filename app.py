@@ -190,7 +190,7 @@ st.markdown("""
     .c-afastado { color: #f59e0b; }   /* Laranja */
     .c-alterado { color: #8b5cf6; }   /* Roxo */
 
-    /* ESTILOS DOS BADGES (PÍLULAS) NA TABELA */
+    /* ESTILOS DOS BADGES (PÍLULAS) NA TABELA PRINCIPAL */
     .badge {
         display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 11.5px;
         font-weight: 600; text-align: center; white-space: nowrap;
@@ -201,7 +201,7 @@ st.markdown("""
     .badge-demitido { background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
     .badge-rh { background-color: #f0f9ff; color: #0369a1; border: 1px solid #7dd3fc; }
 
-    /* ESTILOS DE TABELA */
+    /* ESTILOS DE TABELA PRINCIPAL */
     .tabela-container { width: 100%; overflow-x: auto; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .ql-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 12px; color: #ffffff; border: none !important; }
     .ql-table th { padding: 8px 10px; font-size: 12px !important; font-weight: 600; }
@@ -210,6 +210,15 @@ st.markdown("""
     .ql-table tr:nth-child(odd) { background-color: #121212; }
     .ql-table tbody tr:hover { background-color: #334155 !important; transition: 0.2s; }
     .celula-loja { text-align: center !important; font-weight: bold !important; color: #38bdf8 !important; }
+    
+    /* === NOVO: ESTILOS EXCLUSIVOS DA TABELA DE RESUMO (RELATÓRIO) === */
+    .tabela-resumo { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 13px; color: #ffffff; }
+    .tabela-resumo th { padding: 10px; background-color: #1e293b; border-bottom: 2px solid #475569; text-align: center !important; font-weight: 600; }
+    .tabela-resumo td { padding: 10px; border-bottom: 1px solid #334155; text-align: center !important; vertical-align: middle; }
+    .tabela-resumo tr:nth-child(even) { background-color: #1e1e1e; }
+    .tabela-resumo tr:nth-child(odd) { background-color: #121212; }
+    .tabela-resumo tbody tr:hover { background-color: #334155 !important; transition: 0.2s; }
+    /* ================================================================ */
     
     div[data-testid="stExpander"] { margin-bottom: 6px !important; border: 1px solid #334155 !important; border-radius: 6px !important; background-color: transparent !important; }
     div[data-testid="stExpander"] summary { background-color: #1e293b !important; border-radius: 5px 5px 5px 5px !important; padding: 10px 15px !important; }
@@ -710,14 +719,9 @@ try:
                     hovermode="x unified" 
                 )
 
-                # --- TABELA HTML SEM ESPAÇOS (Evita o bug do Markdown) ---
-                html_resumo = "<div class='tabela-container'>\n"
-                html_resumo += "<table class='ql-table' style='width: 100%;'>\n"
-                html_resumo += "<thead>\n<tr style='background-color: #1e293b; border-bottom: 2px solid #475569;'>\n"
-                html_resumo += "<th style='text-align: center !important; padding: 10px;'>Loja</th>\n"
-                html_resumo += "<th style='text-align: center !important; padding: 10px;'>Abertas</th>\n"
-                html_resumo += "<th style='text-align: center !important; padding: 10px;'>Concluídas</th>\n"
-                html_resumo += "<th style='text-align: center !important; padding: 10px;'>%</th>\n"
+                # --- TABELA HTML CONSTRUÍDA SEM ESPAÇOS ---
+                html_resumo = "<div class='tabela-container'>\n<table class='tabela-resumo'>\n<thead>\n<tr>\n"
+                html_resumo += "<th>Loja</th>\n<th>Abertas</th>\n<th>Concluídas</th>\n<th>%</th>\n"
                 html_resumo += "</tr>\n</thead>\n<tbody>\n"
                 
                 for i in range(len(lojas_x)):
@@ -727,9 +731,9 @@ try:
                     perc_atual = perc_y[i]
                         
                     if perc_atual >= 50:
-                        estilo_perc = "color: #10b981; font-weight: bold; background-color: rgba(16, 185, 129, 0.1); text-align: center !important;"
+                        estilo_perc = "color: #10b981; font-weight: bold; background-color: rgba(16, 185, 129, 0.1);"
                     else:
-                        estilo_perc = "color: #ef4444; font-weight: bold; background-color: rgba(239, 68, 68, 0.1); text-align: center !important;"
+                        estilo_perc = "color: #ef4444; font-weight: bold; background-color: rgba(239, 68, 68, 0.1);"
                         
                     if loja_atual == "Total":
                         estilo_linha = "background-color: #334155; font-weight: bold;"
@@ -737,9 +741,9 @@ try:
                         estilo_linha = ""
                         
                     html_resumo += f"<tr style='{estilo_linha}'>\n"
-                    html_resumo += f"<td style='text-align: center !important;'>{loja_atual}</td>\n"
-                    html_resumo += f"<td style='text-align: center !important;'>{abertas_atual}</td>\n"
-                    html_resumo += f"<td style='text-align: center !important;'>{concluida_atual}</td>\n"
+                    html_resumo += f"<td>{loja_atual}</td>\n"
+                    html_resumo += f"<td>{abertas_atual}</td>\n"
+                    html_resumo += f"<td>{concluida_atual}</td>\n"
                     html_resumo += f"<td style='{estilo_perc}'>{perc_atual}%</td>\n"
                     html_resumo += "</tr>\n"
                 
