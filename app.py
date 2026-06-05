@@ -122,15 +122,20 @@ if not st.session_state["logado"]:
         # Cria um card visual com borda arredondada e fundo sutil
         with st.container(border=True):
             if os.path.exists("passaro_logo.png"):
-                col_logo, col_texto = st.columns([0.2, 0.8], vertical_alignment="center")
-                with col_logo:
-                    st.image("passaro_logo.png", width=60)
+                # INVERTIDO: Texto na esquerda (0.85) e Logo na direita (0.15)
+                col_texto, col_logo = st.columns([0.85, 0.15], vertical_alignment="center")
+                
                 with col_texto:
                     st.markdown("<h2 style='margin: 0;'>Molicenter QL</h2>", unsafe_allow_html=True)
+                    # Subtítulo alinhado à esquerda embaixo do título
+                    st.markdown("<p style='color: #888888; font-size: 14px; margin-top: 5px;'>QL - Quadro de Lotação</p>", unsafe_allow_html=True)
+                
+                with col_logo:
+                    st.image("passaro_logo.png", width=60)
             else:
-                st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>Molicenter - QL</h2>", unsafe_allow_html=True)
+                st.markdown("<h2 style='text-align: left; margin-bottom: 0px;'>Molicenter QL</h2>", unsafe_allow_html=True)
+                st.markdown("<p style='color: #888888; font-size: 14px; margin-top: 5px;'>QL - Quadro de Lotação</p>", unsafe_allow_html=True)
             
-            st.markdown("<p style='text-align: left; color: #888888; font-size: 14px; margin-top: -10px;'>QL - Quadro de Lotação</p>", unsafe_allow_html=True)
             st.divider() # Linha divisória nativa e elegante
             
             user_input = st.text_input("E-mail corporativo:", placeholder="usuario@molicenter.com.br")
@@ -152,7 +157,6 @@ if not st.session_state["logado"]:
                 else:
                     st.error("Usuário ou senha incorretos. Tente novamente.")
     st.stop()
-
 # =========================================================
 # 📊 3. CSS DO DASHBOARD INTERNO (ATUALIZADO PARA FLAT DESIGN)
 # =========================================================
