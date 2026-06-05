@@ -11,7 +11,7 @@ import time
 # =========================================================
 @st.cache_resource
 def obter_rastreador_sessoes():
-    return {}  # Dicionário global compartilhado: { "usuario@email.com": datetime_da_atividade }
+    return {}
 
 # =========================================================
 # 🛠️ 1. CONFIGURAÇÕES INICIAIS E FUNÇÕES AUXILIARES VISUAIS
@@ -21,16 +21,27 @@ st.set_page_config(
     page_title="Molicenter - QL (Quadro de Lotação)", 
     page_icon="passaro_logo.png" if os.path.exists("passaro_logo.png") else "📊",
     layout="wide",
-    initial_sidebar_state="collapsed" 
+    initial_sidebar_state="collapsed"
 )
 
-def obter_classe_status(status):
+# NOVO: Funções para gerar os "Badges" (Pílulas) de Status
+def obter_badge_status(status):
     status_upper = str(status).strip().upper()
-    if "ATIVO" in status_upper or "FÉRIAS" in status_upper or "FERIAS" in status_upper:
-        return 'class="status-verde"'
-    elif "AFASTAMENTO" in status_upper or "AFASTADO" in status_upper or "DEMITIDO" in status_upper:
-        return 'class="status-vermelho"'
-    return ""
+    if "ATIVO" in status_upper:
+        return f'<span class="badge badge-ativo">{status}</span>'
+    elif "FÉRIAS" in status_upper or "FERIAS" in status_upper:
+        return f'<span class="badge badge-ferias">{status}</span>'
+    elif "AFASTAMENTO" in status_upper or "AFASTADO" in status_upper:
+        return f'<span class="badge badge-afastado">{status}</span>'
+    elif "DEMITIDO" in status_upper:
+        return f'<span class="badge badge-demitido">{status}</span>'
+    return f'<span class="badge" style="background-color:#475569; color:white;">{status}</span>'
+
+def obter_badge_rh(status):
+    status_str = str(status).strip()
+    if status_str in ["nan", "None", "", "-"]:
+        return status_str
+    return f'<span class="badge badge-rh">{status_str}</span>'
 
 def formatar_data_br(valor):
     val_str = str(valor).strip()
@@ -68,15 +79,8 @@ USUARIOS_DB = {
 OPCOES_SEXO = ["-", "Indiferente", "Masculino", "Feminino"]
 MAPA_SEXO_SIGLA = {"-": "-", "Indiferente": "I", "Masculino": "M", "Feminino": "F"}
 MAPA_SIGLA_SEXO = {"-": "-", "I": "Indiferente", "M": "Masculino", "F": "Feminino"}
-
 OPCOES_MOTIVO = ["-", "Afastamento","Aumento QL", "Encerramento Contrato Exp.","Função Nova", "Mudança Setor", "Substituição", "Transferência"]
-
-OPCOES_STATUS_RH = [
-    "-", "Requisição atendida", "Aguardando resposta Candidato", "Cancelado", 
-    "Divulgação da vaga", "Documentação Admissão", "Entrevista Loja", "Entrevista RH", 
-    "Exame Admissional", "Não Validado pelo gerente", "Previsão de Início", 
-    "Triagem de Curriculuns", "Validado pelo gerente", "Desistencia Candidato"
-]
+OPCOES_STATUS_RH = ["-", "Requisição atendida", "Aguardando resposta Candidato", "Cancelado", "Divulgação da vaga", "Documentação Admissão", "Entrevista Loja", "Entrevista RH", "Exame Admissional", "Não Validado pelo gerente", "Previsão de Início", "Triagem de Curriculuns", "Validado pelo gerente", "Desistencia Candidato"]
 
 OPCOES_HORARIO = [
     "-", "ART 62 CLT", "SG-SB 05:00-10:00 11:15-13:35", "SG-SB 05:50-11:30 13:20-15:00", 
@@ -111,41 +115,33 @@ if "expander_global" not in st.session_state:
     st.session_state["expander_global"] = False
 
 # =========================================================
-# 🔐 2. INTERFACE DA TELA DE LOGIN (ATUALIZADA)
+# 🔐 2. INTERFACE DA TELA DE LOGIN
 # =========================================================
 if not st.session_state["logado"]:
-    # Espaçamento superior
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     
     _, col_centro, _ = st.columns([1, 1.2, 1])
     
     with col_centro:
-        # Cria um card visual com borda arredondada e fundo sutil
         with st.container(border=True):
             if os.path.exists("passaro_logo.png"):
-                # Ajustei a proporção para o logo ter mais espaço
                 col_texto, col_logo = st.columns([0.8, 0.2], vertical_alignment="center")
-                
                 with col_texto:
-                    # Margens e espaçamentos zerados para grudar o título no subtítulo
                     st.markdown("<h2 style='margin: 0; padding: 0; line-height: 1;'>Molicenter QL</h2>", unsafe_allow_html=True)
                     st.markdown("<p style='color: #a0a0a0; font-size: 15px; margin: 0; padding-top: 4px;'>QL - Quadro de Lotação</p>", unsafe_allow_html=True)
-                
                 with col_logo:
-                    # Aumentado o tamanho do logo (de 60 para 90)
                     st.image("passaro_logo.png", width=90)
             else:
                 st.markdown("<h2 style='margin: 0; padding: 0; line-height: 1;'>Molicenter QL</h2>", unsafe_allow_html=True)
                 st.markdown("<p style='color: #a0a0a0; font-size: 15px; margin: 0; padding-top: 4px;'>QL - Quadro de Lotação</p>", unsafe_allow_html=True)
             
-            st.divider() # Linha divisória nativa e elegante
+            st.divider() 
             
             user_input = st.text_input("E-mail corporativo:", placeholder="usuario@molicenter.com.br")
             pass_input = st.text_input("Senha de acesso:", type="password", placeholder="••••••••")
             
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # Botão Primary para dar destaque de CTA (Call to Action)
             if st.button("Entrar no Sistema", use_container_width=True, type="primary"):
                 user_clean = user_input.strip().lower()
                 if user_clean in USUARIOS_DB and USUARIOS_DB[user_clean]["senha"] == pass_input:
@@ -159,96 +155,63 @@ if not st.session_state["logado"]:
                 else:
                     st.error("Usuário ou senha incorretos. Tente novamente.")
     st.stop()
+
 # =========================================================
-# 📊 3. CSS DO DASHBOARD INTERNO (ATUALIZADO PARA FLAT DESIGN)
+# 📊 3. CSS DO DASHBOARD INTERNO E CARDS
 # =========================================================
 st.markdown("""
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-    [data-testid="stApp"] {
-        zoom: 1.0 !important;
-    }
+    [data-testid="stApp"] { zoom: 1.0 !important; }
+    [data-testid="stAppViewBlockContainer"] { padding-left: 1.2rem !important; padding-right: 1.2rem !important; padding-top: 0.5rem !important; max-width: 100% !important; }
+    [data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
     
-    [data-testid="stAppViewBlockContainer"] { 
-        padding-left: 1.2rem !important; 
-        padding-right: 1.2rem !important; 
-        padding-top: 0.5rem !important; 
-        max-width: 100% !important;
+    /* ESTILOS DOS CARDS DE MÉTRICAS */
+    .metric-container { display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }
+    .metric-card {
+        background-color: #1e293b; border-radius: 8px; padding: 15px 10px; flex: 1; min-width: 120px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        border: 1px solid #334155; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;
     }
+    .metric-card:hover { transform: translateY(-3px); border-color: #475569; }
+    .metric-icon { font-size: 22px; margin-bottom: 8px; }
+    .metric-value { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+    .metric-label { font-size: 13px; color: #cbd5e1; font-weight: 500; }
     
-    [data-testid="stVerticalBlock"] {
-        gap: 0.5rem !important;
+    /* Cores das Métricas */
+    .c-ativo { color: #10b981; }      /* Verde */
+    .c-ferias { color: #3b82f6; }     /* Azul */
+    .c-demitido { color: #ef4444; }   /* Vermelho */
+    .c-afastado { color: #f59e0b; }   /* Laranja */
+    .c-alterado { color: #8b5cf6; }   /* Roxo */
+
+    /* ESTILOS DOS BADGES (PÍLULAS) NA TABELA */
+    .badge {
+        display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 11.5px;
+        font-weight: 600; text-align: center; white-space: nowrap;
     }
-    
-    /* ESTILOS DE TABELA ATUALIZADOS */
-    .tabela-container { 
-        width: 100%; 
-        overflow-x: auto; 
-        margin-bottom: 15px; 
-        border-radius: 8px; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
-    }
-    .ql-table { 
-        width: 100%; 
-        border-collapse: collapse; 
-        font-family: sans-serif; 
-        font-size: 11px; 
-        color: #ffffff; 
-        border: none !important;
-    }
-    
-    .ql-table th { padding: 6px 8px; font-size: 11.5px !important; font-weight: 600; }
-    
-    /* Efeito de hover suave e remoção de bordas verticais pesadas */
-    .ql-table td { 
-        border-bottom: 1px solid #334155; 
-        border-left: none; 
-        border-right: none; 
-        padding: 8px 6px; 
-        text-align: left; 
-        white-space: nowrap; 
-    }
-    
+    .badge-ativo { background-color: #f8fafc; color: #047857; border: 1px solid #10b981; }
+    .badge-ferias { background-color: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+    .badge-afastado { background-color: #fff1f2; color: #be123c; border: 1px solid #fda4af; }
+    .badge-demitido { background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+    .badge-rh { background-color: #f0f9ff; color: #0369a1; border: 1px solid #7dd3fc; }
+
+    /* ESTILOS DE TABELA */
+    .tabela-container { width: 100%; overflow-x: auto; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .ql-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 12px; color: #ffffff; border: none !important; }
+    .ql-table th { padding: 8px 10px; font-size: 12px !important; font-weight: 600; }
+    .ql-table td { border-bottom: 1px solid #334155; border-left: none; border-right: none; padding: 10px 8px; text-align: left; white-space: nowrap; vertical-align: middle; }
     .ql-table tr:nth-child(even) { background-color: #1e1e1e; }
     .ql-table tr:nth-child(odd) { background-color: #121212; }
-    
     .ql-table tbody tr:hover { background-color: #334155 !important; transition: 0.2s; }
-    
-    .status-verde { background-color: #047857 !important; color: white !important; font-weight: bold !important; text-align: center !important; }
-    .status-vermelho { background-color: #be123c !important; color: white !important; font-weight: bold !important; text-align: center !important; }
-    
-    /* Centraliza o número da loja */
     .celula-loja { text-align: center !important; font-weight: bold !important; color: #38bdf8 !important; }
     
-    div[data-testid="stExpander"] {
-        margin-bottom: 6px !important;
-        border: 1px solid #334155 !important;
-        border-radius: 6px !important;
-        background-color: transparent !important;
-    }
-    
-    div[data-testid="stExpander"] summary {
-        background-color: #1e293b !important;
-        border-radius: 5px 5px 5px 5px !important;
-        padding: 10px 15px !important;
-    }
-    
-    div[data-testid="stExpander"] summary p, 
-    div[data-testid="stExpander"] summary span,
-    div[data-testid="stExpander"] summary label {
-        color: #ffffff !important;
-        font-weight: 600 !important;
-        font-size: 13px !important;
-    }
-    
-    div[data-testid="stExpander"] summary svg {
-        color: #ffffff !important;
-        fill: #ffffff !important;
-    }
-    
-    div[data-testid="stExpander"] div[data-testid="stVerticalBlock"] {
-        background-color: transparent !important;
-        padding-top: 5px !important;
-    }
+    div[data-testid="stExpander"] { margin-bottom: 6px !important; border: 1px solid #334155 !important; border-radius: 6px !important; background-color: transparent !important; }
+    div[data-testid="stExpander"] summary { background-color: #1e293b !important; border-radius: 5px 5px 5px 5px !important; padding: 10px 15px !important; }
+    div[data-testid="stExpander"] summary p, div[data-testid="stExpander"] summary span, div[data-testid="stExpander"] summary label { color: #ffffff !important; font-weight: 600 !important; font-size: 13px !important; }
+    div[data-testid="stExpander"] summary svg { color: #ffffff !important; fill: #ffffff !important; }
+    div[data-testid="stExpander"] div[data-testid="stVerticalBlock"] { background-color: transparent !important; padding-top: 5px !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -293,13 +256,10 @@ def carregar_dados_completos():
                 idx_list = df[(df['Nome'] == nome_func) & (df['Loja'] == loja_reg)].index
                 if len(idx_list) > 0:
                     idx = idx_list[0]
-                    
                     sigla_sexo = str(registro.get('Sexo', '-')).strip()
                     sexo_exibicao = MAPA_SIGLA_SEXO.get(sigla_sexo, sigla_sexo)
-                    
                     if 'Situação' in registro and str(registro.get('Situação')).strip() not in ["", "-"]:
                         df.at[idx, 'Situação'] = registro.get('Situação')
-
                     df.at[idx, 'Observação'] = registro.get('Observação', '-')
                     df.at[idx, 'Data Abertura'] = formatar_data_br(registro.get('Data Abertura', '-'))
                     df.at[idx, 'Responsável'] = registro.get('Responsável', '-')
@@ -309,7 +269,6 @@ def carregar_dados_completos():
                     df.at[idx, 'Status RH'] = registro.get('Status RH', '-')
                     df.at[idx, 'Candidato'] = registro.get('Candidato', '-')
                     df.at[idx, 'Data Admissão'] = formatar_data_br(registro.get('Data Admissão', '-'))
-                    
                     df.at[idx, 'Possui_Alteracao_Sheets'] = True
                     mapeados.add((nome_func, loja_reg))
 
@@ -334,29 +293,22 @@ def carregar_dados_completos():
                     situacao_final = registro.get('Situaçao') if registro.get('Situaçao') else (registro.get('Situação') if registro.get('Situação') else 'Demitido')
                     
                     linha_manual = {
-                        'Loja': loja_reg,
-                        'Nome': nome_func, 
-                        'Situação': situacao_final, 
-                        'Dept': dept_final, 
-                        'Função': funcao_final,
-                        'Horario_Sistema_Real': '-',
+                        'Loja': loja_reg, 'Nome': nome_func, 'Situação': situacao_final, 
+                        'Dept': dept_final, 'Função': funcao_final, 'Horario_Sistema_Real': '-',
                         'Observação': registro.get('Observação', '-'),
                         'Data Abertura': formatar_data_br(registro.get('Data Abertura', '-')),
                         'Responsável': registro.get('Responsável', '-'),
                         'Horário Contrato': str(registro.get('Horário Contrato', '-')),
-                        'Sexo': sexo_exibicao,
-                        'Motivo': registro.get('Motivo', '-'),
+                        'Sexo': sexo_exibicao, 'Motivo': registro.get('Motivo', '-'),
                         'Status RH': registro.get('Status RH', '-'),
                         'Candidato': registro.get('Candidato', '-'),
-                        'Data Admissão': data_ad_checar,
-                        'Possui_Alteracao_Sheets': True
+                        'Data Admissão': data_ad_checar, 'Possui_Alteracao_Sheets': True
                     }
                     linhas_novas_manuais.append(linha_manual)
             
             if len(linhas_novas_manuais) > 0:
                 df_manuais = pd.DataFrame(linhas_novas_manuais)
                 df = pd.concat([df, df_manuais], ignore_index=True)
-                
     except:
         pass
 
@@ -365,7 +317,6 @@ def carregar_dados_completos():
 try:
     df_bruto = carregar_dados_completos()
 
-    # 🌟 ATIVIDADE COLETIVA EM TEMPO REAL 🌟
     sessoes_globais = obter_rastreador_sessoes()
     if st.session_state["logado"]:
         sessoes_globais[st.session_state["usuario"]] = datetime.now()
@@ -384,24 +335,17 @@ try:
     st.sidebar.markdown(f"**Nível:** `{perfil.upper()}`")
     st.markdown("<hr style='margin-top: 2px; margin-bottom: 8px;'>", unsafe_allow_html=True)
 
-    # 🌟 PAINEL DE MONITORAMENTO (EXCLUSIVO DO ANALISTA) 🌟
     if perfil == "analista":
         agora_painel = datetime.now()
-        usuarios_online = [
-            user for user, ultima_atividade in sessoes_globais.items()
-            if (agora_painel - ultima_atividade).total_seconds() < 600
-        ]
+        usuarios_online = [user for user, ultima_atividade in sessoes_globais.items() if (agora_painel - ultima_atividade).total_seconds() < 600]
         st.markdown(
             f"""
             <div style="background-color: #1e293b; padding: 12px; border-radius: 6px; border: 1px solid #334155; margin-bottom: 15px;">
                 <span style="color: #38bdf8; font-weight: bold;">🟢 Usuários online no Sistema (Últimos 10 min):</span>
                 <span style="color: #ffffff; margin-left: 8px;">{', '.join([f'<b>{u}</b>' for u in usuarios_online])}</span>
             </div>
-            """, 
-            unsafe_allow_html=True
-        )
+            """, unsafe_allow_html=True)
 
-    # 🏪 LÓGICA DE SELEÇÃO DE LOJA COM VISÕES AGREGADAS
     if loja_fixa is not None:
         loja_selecionada = loja_fixa
         st.info(f"🏪 Modo de Visualização Restrito: **Loja {loja_selecionada:02d}**")
@@ -412,11 +356,7 @@ try:
         opcoes_selecao = ["Total Lojas", "Total Rede"] + lojas_reais
         
         st.markdown("<div style='max-width: 300px;'>", unsafe_allow_html=True)
-        loja_selecionada = st.selectbox(
-            "Selecione a Loja para Análise:", 
-            opcoes_selecao, 
-            format_func=lambda x: f"Loja {int(x):02d}" if isinstance(x, int) else str(x)
-        )
+        loja_selecionada = st.selectbox("Selecione a Loja para Análise:", opcoes_selecao, format_func=lambda x: f"Loja {int(x):02d}" if isinstance(x, int) else str(x))
         st.markdown("</div>", unsafe_allow_html=True)
 
         if loja_selecionada == "Total Lojas":
@@ -443,7 +383,6 @@ try:
     funcao_final = ""
     situacao_final = ""
     
-    # ⚠️ SELEÇÃO EXTERNA AO FORMULÁRIO (Para atualizar os dados default dinamicamente)
     if tipo_registro == "Editar Colaborador Existente":
         funcionarios_loja = sorted(df_loja['Nome'].dropna().unique())
         colaborador_selecionado = st.sidebar.selectbox("Selecione o Colaborador:", funcionarios_loja)
@@ -470,10 +409,8 @@ try:
         situacao_final = st.sidebar.selectbox("Situação Inicial:", ["Ativos", "Demitido", "Afastamento", "Férias"])
 
     if colaborador_final:
-        # 🟢 INÍCIO DO FORMULÁRIO DE UX MODERNA
         with st.sidebar.form("form_edicao_ql", border=True):
             st.markdown("### Atualizar Dados")
-            
             st.markdown("🔸 **Supervisor**")
             val_obs_default = str(dados_func['Observação']) if (dados_func is not None and str(dados_func['Observação']) != "-") else ""
             if perfil in ["analista", "rh", "supervisor"]:
@@ -543,12 +480,8 @@ try:
                 novo_candidato = st.text_input("Candidato:", value=str(dados_func['Candidato']) if dados_func is not None else "-", disabled=True)
                 nova_data_admissao = st.text_input("Data Admissão:", value=str(dados_func['Data Admissão']) if dados_func is not None else "-", disabled=True)
             
-            # Botão de submit do formulário
             submit_button = st.form_submit_button("💾 Salvar Alterações", use_container_width=True, type="primary")
 
-        # =========================================================
-        # 🚀 BLOCO DE SALVAMENTO ATUALIZADO (TRAVA COM SPINNER)
-        # =========================================================
         if submit_button:
             if tipo_registro == "Cadastrar Novo / Não Listado" and not colaborador_final:
                 st.sidebar.error("Erro: O nome do colaborador não pode ficar em branco.")
@@ -557,30 +490,20 @@ try:
                     loja_salvamento = int(dados_func['Loja']) if (dados_func is not None) else (int(loja_selecionada) if isinstance(loja_selecionada, int) else 1)
                     
                     payload = {
-                        "Loja": loja_salvamento,
-                        "Nome": colaborador_final,
-                        "Dept": dept_final,
-                        "Funcao": funcao_final,
-                        "Situaçao": situacao_final,
-                        "Observacao": nova_obs,
-                        "DataAbertura": nova_data_abertura,
-                        "Responsavel": novo_responsavel,
-                        "HorarioContrato": str(novo_horario_contrato),
-                        "Sexo": novo_sexo,
-                        "Motivo": novo_motivo,
-                        "StatusRH": novo_status_rh,
-                        "Candidato": novo_candidato,
-                        "DataAdmissao": nova_data_admissao,
+                        "Loja": loja_salvamento, "Nome": colaborador_final, "Dept": dept_final, "Funcao": funcao_final,
+                        "Situaçao": situacao_final, "Observacao": nova_obs, "DataAbertura": nova_data_abertura,
+                        "Responsavel": novo_responsavel, "HorarioContrato": str(novo_horario_contrato),
+                        "Sexo": novo_sexo, "Motivo": novo_motivo, "StatusRH": novo_status_rh,
+                        "Candidato": novo_candidato, "DataAdmissao": nova_data_admissao,
                         "Usuario": st.session_state["usuario"]
                     }
-                    
                     try:
                         headers = {'Content-Type': 'application/json'}
                         res = requests.post(URL_API_SHEETS, data=json.dumps(payload), headers=headers, timeout=10)
                         if res.status_code == 200:
                             st.sidebar.success("✅ Dados salvos com sucesso!")
                             st.cache_data.clear()
-                            time.sleep(1.5) # Dá tempo para o usuário ler o sucesso antes da tela atualizar e limpar tudo
+                            time.sleep(1.5)
                             st.rerun()
                         else:
                             st.sidebar.error("Erro ao comunicar com a API do Sheets.")
@@ -600,20 +523,43 @@ try:
 
     df_loja['Situação_Upper'] = df_loja['Situação'].astype(str).str.upper()
     
-    # Contagens separadas
     ativos_qtd = len(df_loja[df_loja['Situação_Upper'].str.contains('ATIVO')])
     ferias_qtd = len(df_loja[df_loja['Situação_Upper'].str.contains('FÉRIAS|FERIAS')])
     demitidos_qtd = len(df_loja[df_loja['Situação_Upper'].str.contains('DEMITIDO')])
     afastados_qtd = len(df_loja[df_loja['Situação_Upper'].str.contains('AFASTAMENTO|AFASTADO')])
     alterados_qtd = len(df_loja[df_loja['Possui_Alteracao_Sheets'] == True])
 
-    # Mudança para 5 colunas na ordem solicitada
-    col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("Funcionários Ativos", ativos_qtd)
-    col2.metric("Férias", ferias_qtd)
-    col3.metric("Demitidos", demitidos_qtd)
-    col4.metric("Afastamentos", afastados_qtd)
-    col5.metric("Registros Alterados", alterados_qtd)
+    # 🌟 NOVO: Renderizando Cards de Métricas Customizados com FontAwesome
+    html_cards = f"""
+    <div class="metric-container">
+        <div class="metric-card">
+            <i class="fa-solid fa-users metric-icon c-ativo"></i>
+            <div class="metric-value c-ativo">{ativos_qtd}</div>
+            <div class="metric-label">Ativos</div>
+        </div>
+        <div class="metric-card">
+            <i class="fa-solid fa-umbrella-beach metric-icon c-ferias"></i>
+            <div class="metric-value c-ferias">{ferias_qtd}</div>
+            <div class="metric-label">Férias</div>
+        </div>
+        <div class="metric-card">
+            <i class="fa-solid fa-user-minus metric-icon c-demitido"></i>
+            <div class="metric-value c-demitido">{demitidos_qtd}</div>
+            <div class="metric-label">Demitidos</div>
+        </div>
+        <div class="metric-card">
+            <i class="fa-solid fa-clock-rotate-left metric-icon c-afastado"></i>
+            <div class="metric-value c-afastado">{afastados_qtd}</div>
+            <div class="metric-label">Afastamentos</div>
+        </div>
+        <div class="metric-card">
+            <i class="fa-solid fa-pen-to-square metric-icon c-alterado"></i>
+            <div class="metric-value c-alterado">{alterados_qtd}</div>
+            <div class="metric-label">Alterados</div>
+        </div>
+    </div>
+    """
+    st.markdown(html_cards, unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -667,7 +613,6 @@ try:
                 
                 st.markdown(f"**🔹 Cargo: {funcao}**")
                 
-                # 🌟 LÓGICA DA COLUNA ADICIONAL DINÂMICA (LOJA)
                 if modo_visao_global:
                     colunas_selecionadas = [
                         'Situação', 'Loja', 'Nome', 'Horario_Sistema_Real', 'Observação',
@@ -686,7 +631,6 @@ try:
                 else:
                     df_filtrado = df_funcao[colunas_selecionadas]
                 
-                # 🟢 Renderização da Tabela HTML Dinâmica (CORES MODERNAS E ARREDONDADAS)
                 colspan_analista = 4 if modo_visao_global else 3
                 
                 html_tabela = f"""
@@ -717,11 +661,13 @@ try:
 <tbody>
 """
                 
+                # 🌟 NOVO: Lógica da tabela com "Pills" e Title Case no nome
                 for _, row in df_filtrado.iterrows():
                     html_tabela += "<tr>\n"
                     
-                    classe_status = obter_classe_status(row['Situação'])
-                    html_tabela += f"<td {classe_status}>{row['Situação']}</td>\n"
+                    # Coluna de Status Principal (Usa Badge)
+                    badge_status = obter_badge_status(row['Situação'])
+                    html_tabela += f"<td style='text-align: center;'>{badge_status}</td>\n"
                     
                     for col_nome in df_filtrado.columns[1:]:
                         val_original = row[col_nome]
@@ -732,6 +678,17 @@ try:
                             except:
                                 val_formatado = str(val_original)
                             html_tabela += f'<td class="celula-loja">{val_formatado}</td>\n'
+                        
+                        elif col_nome == 'Nome':
+                            # Transforma "JOÃO DA SILVA" em "João Da Silva"
+                            val_formatado = str(val_original).title()
+                            html_tabela += f"<td>{val_formatado}</td>\n"
+                            
+                        elif col_nome == 'Status RH':
+                            # Coluna de Status RH (Usa Badge)
+                            badge_rh = obter_badge_rh(val_original)
+                            html_tabela += f"<td style='text-align: center;'>{badge_rh}</td>\n"
+                            
                         else:
                             html_tabela += f"<td>{val_original}</td>\n"
                             
