@@ -295,9 +295,11 @@ def carregar_dados_completos():
                 
                 if (nome_func, loja_reg) not in mapeados:
                     data_ad_checar = formatar_data_br(registro.get('Data Admissão', '-'))
-                    if data_ad_checar != "-":
-                        continue
-                        
+                    # ==============================================================
+                    # BUG FIX: Removido o 'if data_ad_checar != "-": continue'
+                    # Agora TODOS os registros do Sheets entram no sistema!
+                    # ==============================================================
+                    
                     sigla_sexo = str(registro.get('Sexo', '-')).strip()
                     sexo_exibicao = MAPA_SIGLA_SEXO.get(sigla_sexo, sigla_sexo)
                     
