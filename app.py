@@ -528,7 +528,6 @@ try:
     afastados_qtd = len(df_loja[df_loja['Situação_Upper'].str.contains('AFASTAMENTO|AFASTADO')])
     alterados_qtd = len(df_loja[df_loja['Possui_Alteracao_Sheets'] == True])
 
-    # 🌟 NOVO: Renderizando Cards de Métricas Customizados com FontAwesome
     html_cards = f"""
     <div class="metric-container">
         <div class="metric-card">
@@ -617,8 +616,6 @@ try:
             df_analise = df_loja.copy()
             df_analise['DataAbertura_DT'] = pd.to_datetime(df_analise['Data Abertura'], format='%d/%m/%Y', errors='coerce')
 
-            # Lógica 3: Puxa TODOS os registros alterados (Possui_Alteracao_Sheets) 
-            # desde que a data não seja maior que a Data Fim selecionada.
             mascara_periodo = (df_analise['Possui_Alteracao_Sheets'] == True) & (
                 (df_analise['DataAbertura_DT'].dt.date <= data_fim_filtro) | (df_analise['DataAbertura_DT'].isna())
             )
@@ -629,7 +626,6 @@ try:
             else:
                 abertas_por_loja = df_abertas_periodo.groupby('Loja').size().reset_index(name='Abertas')
                 
-                # Lógica 4: Validação robusta de conclusão
                 def check_concluida(x):
                     val = str(x).strip().lower()
                     if val in ['-', '', 'nan', 'none', 'nat', '0', 'null']:
@@ -655,10 +651,6 @@ try:
                 abertas_y = df_exibicao_rel['Abertas'].tolist() + [total_abertas]
                 concluidas_y = df_exibicao_rel['Concluídas'].tolist() + [total_concluidas]
                 perc_y = df_exibicao_rel['%'].tolist() + [perc_total]
-
-                df_exibicao_rel['%'] = df_exibicao_rel['%'].astype(str) + "%"
-                linha_total = pd.DataFrame([{"Loja": "Total", "Abertas": total_abertas, "Concluídas": total_concluidas, "%": f"{perc_total}%"}])
-                df_exibicao_rel = pd.concat([df_exibicao_rel, linha_total], ignore_index=True)
 
                 # --- CRIAR GRÁFICO PLOTLY MODERNIZADO ---
                 fig = go.Figure()
@@ -718,51 +710,40 @@ try:
                     hovermode="x unified" 
                 )
 
-                # --- TABELA HTML CUSTOMIZADA PARA CENTRALIZAÇÃO PERFEITA ---
-                html_resumo = """
-                <div class="tabela-container">
-                <table class="ql-table" style="width: 100%;">
-                <thead>
-                <tr style="background-color: #1e293b; border-bottom: 2px solid #475569;">
-                <th style="text-align: center !important; padding: 10px;">Loja</th>
-                <th style="text-align: center !important; padding: 10px;">Abertas</th>
-                <th style="text-align: center !important; padding: 10px;">Concluídas</th>
-                <th style="text-align: center !important; padding: 10px;">%</th>
-                </tr>
-                </thead>
-                <tbody>
-                """
+                # --- TABELA HTML SEM ESPAÇOS (Evita o bug do Markdown) ---
+                html_resumo = "<div class='tabela-container'>\n"
+                html_resumo += "<table class='ql-table' style='width: 100%;'>\n"
+                html_resumo += "<thead>\n<tr style='background-color: #1e293b; border-bottom: 2px solid #475569;'>\n"
+                html_resumo += "<th style='text-align: center !important; padding: 10px;'>Loja</th>\n"
+                html_resumo += "<th style='text-align: center !important; padding: 10px;'>Abertas</th>\n"
+                html_resumo += "<th style='text-align: center !important; padding: 10px;'>Concluídas</th>\n"
+                html_resumo += "<th style='text-align: center !important; padding: 10px;'>%</th>\n"
+                html_resumo += "</tr>\n</thead>\n<tbody>\n"
                 
-                for _, row in df_exibicao_rel.iterrows():
-                    try:
-                        num = float(str(row['%']).replace('%', ''))
-                    except:
-                        num = 0
+                for i in range(len(lojas_x)):
+                    loja_atual = lojas_x[i]
+                    abertas_atual = abertas_y[i]
+                    concluida_atual = concluidas_y[i]
+                    perc_atual = perc_y[i]
                         
-                    if num >= 50:
+                    if perc_atual >= 50:
                         estilo_perc = "color: #10b981; font-weight: bold; background-color: rgba(16, 185, 129, 0.1); text-align: center !important;"
                     else:
                         estilo_perc = "color: #ef4444; font-weight: bold; background-color: rgba(239, 68, 68, 0.1); text-align: center !important;"
                         
-                    if str(row['Loja']).strip().upper() == "TOTAL":
+                    if loja_atual == "Total":
                         estilo_linha = "background-color: #334155; font-weight: bold;"
                     else:
                         estilo_linha = ""
                         
-                    html_resumo += f"""
-                    <tr style="{estilo_linha}">
-                        <td style="text-align: center !important;">{row['Loja']}</td>
-                        <td style="text-align: center !important;">{row['Abertas']}</td>
-                        <td style="text-align: center !important;">{row['Concluídas']}</td>
-                        <td style="{estilo_perc}">{row['%']}</td>
-                    </tr>
-                    """
+                    html_resumo += f"<tr style='{estilo_linha}'>\n"
+                    html_resumo += f"<td style='text-align: center !important;'>{loja_atual}</td>\n"
+                    html_resumo += f"<td style='text-align: center !important;'>{abertas_atual}</td>\n"
+                    html_resumo += f"<td style='text-align: center !important;'>{concluida_atual}</td>\n"
+                    html_resumo += f"<td style='{estilo_perc}'>{perc_atual}%</td>\n"
+                    html_resumo += "</tr>\n"
                 
-                html_resumo += """
-                </tbody>
-                </table>
-                </div>
-                """
+                html_resumo += "</tbody>\n</table>\n</div>"
 
                 st.markdown("<br>", unsafe_allow_html=True)
                 col_tab, col_graf = st.columns([1, 2.5])
