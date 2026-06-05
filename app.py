@@ -130,7 +130,7 @@ if not st.session_state["logado"]:
             else:
                 st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>Molicenter - QL</h2>", unsafe_allow_html=True)
             
-            st.markdown("<p style='text-align: center; color: #888888; font-size: 14px; margin-top: -10px;'>Acesso ao Quadro de Lotação</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: left; color: #888888; font-size: 14px; margin-top: -10px;'>QL - Quadro de Lotação</p>", unsafe_allow_html=True)
             st.divider() # Linha divisória nativa e elegante
             
             user_input = st.text_input("E-mail corporativo:", placeholder="usuario@molicenter.com.br")
