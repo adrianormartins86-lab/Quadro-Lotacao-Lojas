@@ -4,7 +4,7 @@ import requests
 import json
 from datetime import datetime, date
 import os
-import time # INCLUÍDO PARA A TRAVA DE TEMPO
+import time
 
 # =========================================================
 # 🌐 RASTREAMENTO DE SESSÕES ATIVAS EM TEMPO REAL
@@ -110,66 +110,51 @@ if "expander_global" not in st.session_state:
     st.session_state["expander_global"] = False
 
 # =========================================================
-# 🔐 2. INTERFACE DA TELA DE LOGIN
+# 🔐 2. INTERFACE DA TELA DE LOGIN (ATUALIZADA)
 # =========================================================
 if not st.session_state["logado"]:
-    st.markdown("""
-        <style>
-        [data-testid="stColumn"] {
-            max-width: 480px !important;
-            margin: 0 auto !important;
-        }
-        h1 { font-size: 38px !important; font-weight: bold !important; }
-        h5 { font-size: 18px !important; color: #aaaaaa !important; }
-        
-        .stTextInput label p { font-size: 16px !important; font-weight: bold !important; color: #ffffff !important; }
-        .stTextInput input { font-size: 16px !important; padding: 12px 14px !important; height: 48px !important; }
-        
-        .stButton button { 
-            font-size: 17px !important; 
-            font-weight: bold !important; 
-            height: 50px !important; 
-            background-color: #244e73 !important;
-            border: 1px solid #444444 !important;
-        }
-        </style>
-        <br><br><br>
-    """, unsafe_allow_html=True)
+    # Espaçamento superior
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
     
-    _, col_centro, _ = st.columns([0.1, 9.8, 0.1])
+    _, col_centro, _ = st.columns([1, 1.2, 1])
     
     with col_centro:
-        if os.path.exists("passaro_logo.png"):
-            col_logo_vaga, col_texto_vaga = st.columns([0.35, 1], vertical_alignment="center")
-            with col_logo_vaga:
-                st.image("passaro_logo.png", width=95)
-            with col_texto_vaga:
-                st.markdown("<h1 style='margin: 0; padding-left: 0;'>Molicenter - QL</h1>", unsafe_allow_html=True)
-        else:
-            st.markdown("<h1 style='text-align: center;'>Molicenter - QL</h1>", unsafe_allow_html=True)
-        
-        st.markdown("<h5 style='text-align: center; margin-top: 5px;'>Quadro de Lotação</h5>", unsafe_allow_html=True)
-        st.markdown("<hr style='margin-top: 10px; margin-bottom: 30px;'>", unsafe_allow_html=True)
-        
-        user_input = st.text_input("E-mail corporativo:")
-        pass_input = st.text_input("Senha de acesso:", type="password")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Entrar no Sistema", use_container_width=True):
-            user_clean = user_input.strip().lower()
-            if user_clean in USUARIOS_DB and USUARIOS_DB[user_clean]["senha"] == pass_input:
-                st.session_state["logado"] = True
-                st.session_state["usuario"] = user_clean
-                st.session_state["perfil"] = USUARIOS_DB[user_clean]["perfil"]
-                st.session_state["loja_fixa"] = USUARIOS_DB[user_clean]["loja_fixa"]
-                st.success("Acesso concedido!")
-                st.rerun()
+        # Cria um card visual com borda arredondada e fundo sutil
+        with st.container(border=True):
+            if os.path.exists("passaro_logo.png"):
+                col_logo, col_texto = st.columns([0.2, 0.8], vertical_alignment="center")
+                with col_logo:
+                    st.image("passaro_logo.png", width=60)
+                with col_texto:
+                    st.markdown("<h2 style='margin: 0;'>Molicenter QL</h2>", unsafe_allow_html=True)
             else:
-                st.error("Usuários ou senha incorretos. Tente novamente.")
+                st.markdown("<h2 style='text-align: center; margin-bottom: 0px;'>Molicenter - QL</h2>", unsafe_allow_html=True)
+            
+            st.markdown("<p style='text-align: center; color: #888888; font-size: 14px; margin-top: -10px;'>Acesso ao Quadro de Lotação</p>", unsafe_allow_html=True)
+            st.divider() # Linha divisória nativa e elegante
+            
+            user_input = st.text_input("E-mail corporativo:", placeholder="usuario@molicenter.com.br")
+            pass_input = st.text_input("Senha de acesso:", type="password", placeholder="••••••••")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Botão Primary para dar destaque de CTA (Call to Action)
+            if st.button("Entrar no Sistema", use_container_width=True, type="primary"):
+                user_clean = user_input.strip().lower()
+                if user_clean in USUARIOS_DB and USUARIOS_DB[user_clean]["senha"] == pass_input:
+                    st.session_state["logado"] = True
+                    st.session_state["usuario"] = user_clean
+                    st.session_state["perfil"] = USUARIOS_DB[user_clean]["perfil"]
+                    st.session_state["loja_fixa"] = USUARIOS_DB[user_clean]["loja_fixa"]
+                    st.success("Acesso concedido!")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error("Usuário ou senha incorretos. Tente novamente.")
     st.stop()
 
 # =========================================================
-# 📊 3. CSS DO DASHBOARD INTERNO
+# 📊 3. CSS DO DASHBOARD INTERNO (ATUALIZADO PARA FLAT DESIGN)
 # =========================================================
 st.markdown("""
     <style>
@@ -188,30 +173,55 @@ st.markdown("""
         gap: 0.5rem !important;
     }
     
-    .tabela-container { width: 100%; overflow-x: auto; margin-bottom: 15px; }
-    .ql-table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 11px; color: #ffffff; }
+    /* ESTILOS DE TABELA ATUALIZADOS */
+    .tabela-container { 
+        width: 100%; 
+        overflow-x: auto; 
+        margin-bottom: 15px; 
+        border-radius: 8px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+    }
+    .ql-table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        font-family: sans-serif; 
+        font-size: 11px; 
+        color: #ffffff; 
+        border: none !important;
+    }
     
-    .ql-table th { padding: 4px 6px; font-size: 11.5px !important; font-weight: bold; }
-    .ql-table td { border: 1px solid #444444; padding: 3px 6px; text-align: left; white-space: nowrap; }
+    .ql-table th { padding: 6px 8px; font-size: 11.5px !important; font-weight: 600; }
+    
+    /* Efeito de hover suave e remoção de bordas verticais pesadas */
+    .ql-table td { 
+        border-bottom: 1px solid #334155; 
+        border-left: none; 
+        border-right: none; 
+        padding: 8px 6px; 
+        text-align: left; 
+        white-space: nowrap; 
+    }
     
     .ql-table tr:nth-child(even) { background-color: #1e1e1e; }
     .ql-table tr:nth-child(odd) { background-color: #121212; }
     
-    .status-verde { background-color: #15803d !important; color: white !important; font-weight: bold !important; text-align: center !important; }
-    .status-vermelho { background-color: #b91c1c !important; color: white !important; font-weight: bold !important; text-align: center !important; }
+    .ql-table tbody tr:hover { background-color: #334155 !important; transition: 0.2s; }
+    
+    .status-verde { background-color: #047857 !important; color: white !important; font-weight: bold !important; text-align: center !important; }
+    .status-vermelho { background-color: #be123c !important; color: white !important; font-weight: bold !important; text-align: center !important; }
     
     /* Centraliza o número da loja */
     .celula-loja { text-align: center !important; font-weight: bold !important; color: #38bdf8 !important; }
     
     div[data-testid="stExpander"] {
         margin-bottom: 6px !important;
-        border: 1px solid #244e73 !important;
+        border: 1px solid #334155 !important;
         border-radius: 6px !important;
         background-color: transparent !important;
     }
     
     div[data-testid="stExpander"] summary {
-        background-color: #244e73 !important;
+        background-color: #1e293b !important;
         border-radius: 5px 5px 5px 5px !important;
         padding: 10px 15px !important;
     }
@@ -220,8 +230,8 @@ st.markdown("""
     div[data-testid="stExpander"] summary span,
     div[data-testid="stExpander"] summary label {
         color: #ffffff !important;
-        font-weight: bold !important;
-        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        font-size: 13px !important;
     }
     
     div[data-testid="stExpander"] summary svg {
@@ -427,6 +437,7 @@ try:
     funcao_final = ""
     situacao_final = ""
     
+    # ⚠️ SELEÇÃO EXTERNA AO FORMULÁRIO (Para atualizar os dados default dinamicamente)
     if tipo_registro == "Editar Colaborador Existente":
         funcionarios_loja = sorted(df_loja['Nome'].dropna().unique())
         colaborador_selecionado = st.sidebar.selectbox("Selecione o Colaborador:", funcionarios_loja)
@@ -453,81 +464,86 @@ try:
         situacao_final = st.sidebar.selectbox("Situação Inicial:", ["Ativos", "Demitido", "Afastamento", "Férias"])
 
     if colaborador_final:
-        st.sidebar.markdown("---")
-        
-        st.sidebar.subheader("🔸 Supervisor")
-        val_obs_default = str(dados_func['Observação']) if (dados_func is not None and str(dados_func['Observação']) != "-") else ""
-        if perfil in ["analista", "rh", "supervisor"]:
-            nova_obs = st.sidebar.text_area("Observação:", value=val_obs_default)
-        else:
-            st.sidebar.text_input("Observação:", value=val_obs_default if val_obs_default else "-", disabled=True)
-            nova_obs = val_obs_default if val_obs_default else "-"
-        
-        st.sidebar.subheader("🔹 Gerente")
-        if perfil in ["analista", "rh", "supervisor", "gerente"]:
-            data_ab_atual = str(dados_func['Data Abertura']).strip() if dados_func is not None else "-"
-            try:
-                data_ab_default = datetime.strptime(data_ab_atual, "%d/%m/%Y").date() if data_ab_atual != "-" else date.today()
-            except:
-                data_ab_default = date.today()
-            nova_data_ab_col = st.sidebar.date_input("Data Abertura:", value=data_ab_default, format="DD/MM/YYYY")
-            nova_data_abertura = nova_data_ab_col.strftime("%d/%m/%Y")
+        # 🟢 INÍCIO DO FORMULÁRIO DE UX MODERNA
+        with st.sidebar.form("form_edicao_ql", border=True):
+            st.markdown("### Atualizar Dados")
             
-            val_resp_default = str(dados_func['Responsável']) if (dados_func is not None and str(dados_func['Responsável']) != "-") else ""
-            novo_responsavel = st.sidebar.text_input("Responsável:", value=val_resp_default)
-            
-            val_horario_default = str(dados_func['Horário Contrato']).strip() if dados_func is not None else "-"
-            idx_horario = OPCOES_HORARIO.index(val_horario_default) if val_horario_default in OPCOES_HORARIO else 0
-            novo_horario_contrato = st.sidebar.selectbox("Horário Contrato:", OPCOES_HORARIO, index=idx_horario)
-            
-            sexo_exibido_atual = str(dados_func['Sexo']).strip() if dados_func is not None else "-"
-            idx_sexo = OPCOES_SEXO.index(sexo_exibido_atual) if sexo_exibido_atual in OPCOES_SEXO else 0
-            texto_sexo_selecionado = st.sidebar.selectbox("Sexo:", OPCOES_SEXO, index=idx_sexo)
-            novo_sexo = MAPA_SEXO_SIGLA.get(texto_sexo_selecionado, "-")
-            
-            motivo_atual = str(dados_func['Motivo']).strip() if dados_func is not None else "-"
-            idx_motivo = OPCOES_MOTIVO.index(motivo_atual) if motivo_atual in OPCOES_MOTIVO else 0
-            novo_motivo = st.sidebar.selectbox("Motivo:", OPCOES_MOTIVO, index=idx_motivo)
-        else:
-            nova_data_abertura = st.sidebar.text_input("Data Abertura:", value=str(dados_func['Data Abertura']) if dados_func is not None else "-", disabled=True)
-            novo_responsavel = st.sidebar.text_input("Responsável:", value=str(dados_func['Responsável']) if dados_func is not None else "-", disabled=True)
-            novo_horario_contrato = st.sidebar.text_input("Horário Contrato:", value=str(dados_func['Horário Contrato']) if dados_func is not None else "-", disabled=True)
-            novo_sexo_exibido = st.sidebar.text_input("Sexo:", value=str(dados_func['Sexo']) if dados_func is not None else "-", disabled=True)
-            novo_sexo = MAPA_SEXO_SIGLA.get(novo_sexo_exibido, "-")
-            novo_motivo = st.sidebar.text_input("Motivo:", value=str(dados_func['Motivo']) if dados_func is not None else "-", disabled=True)
-        
-        st.sidebar.subheader("🔺 Recursos Humanos (RH)")
-        if perfil in ["analista", "rh"]:
-            status_atual = str(dados_func['Status RH']).strip() if dados_func is not None else "-"
-            idx_status = OPCOES_STATUS_RH.index(status_atual) if status_atual in OPCOES_STATUS_RH else 0
-            novo_status_rh = st.sidebar.selectbox("Status RH:", OPCOES_STATUS_RH, index=idx_status)
-            
-            val_cand_default = str(dados_func['Candidato']) if (dados_func is not None and str(dados_func['Candidato']) != "-") else ""
-            novo_candidato = st.sidebar.text_input("Candidato:", value=val_cand_default)
-            
-            data_ad_atual = str(dados_func['Data Admissão']).strip() if dados_func is not None else "-"
-            tem_data_anterior = data_ad_atual != "-"
-            
-            definir_data = st.sidebar.checkbox("Definir data de admissão", value=tem_data_anterior)
-            
-            if definir_data:
-                try:
-                    data_ad_default = datetime.strptime(data_ad_atual, "%d/%m/%Y").date() if tem_data_anterior else date.today()
-                except:
-                    data_ad_default = date.today()
-                nova_data_ad_col = st.sidebar.date_input("Data Admissão:", value=data_ad_default, format="DD/MM/YYYY")
-                nova_data_admissao = nova_data_ad_col.strftime("%d/%m/%Y")
+            st.markdown("🔸 **Supervisor**")
+            val_obs_default = str(dados_func['Observação']) if (dados_func is not None and str(dados_func['Observação']) != "-") else ""
+            if perfil in ["analista", "rh", "supervisor"]:
+                nova_obs = st.text_area("Observação:", value=val_obs_default)
             else:
-                nova_data_admissao = "-"
-        else:
-            novo_status_rh = st.sidebar.text_input("Status RH:", value=str(dados_func['Status RH']) if dados_func is not None else "-", disabled=True)
-            novo_candidato = st.sidebar.text_input("Candidato:", value=str(dados_func['Candidato']) if dados_func is not None else "-", disabled=True)
-            nova_data_admissao = st.sidebar.text_input("Data Admissão:", value=str(dados_func['Data Admissão']) if dados_func is not None else "-", disabled=True)
-        
+                st.text_input("Observação:", value=val_obs_default if val_obs_default else "-", disabled=True)
+                nova_obs = val_obs_default if val_obs_default else "-"
+            
+            st.markdown("🔹 **Gerente**")
+            if perfil in ["analista", "rh", "supervisor", "gerente"]:
+                data_ab_atual = str(dados_func['Data Abertura']).strip() if dados_func is not None else "-"
+                try:
+                    data_ab_default = datetime.strptime(data_ab_atual, "%d/%m/%Y").date() if data_ab_atual != "-" else date.today()
+                except:
+                    data_ab_default = date.today()
+                nova_data_ab_col = st.date_input("Data Abertura:", value=data_ab_default, format="DD/MM/YYYY")
+                nova_data_abertura = nova_data_ab_col.strftime("%d/%m/%Y")
+                
+                val_resp_default = str(dados_func['Responsável']) if (dados_func is not None and str(dados_func['Responsável']) != "-") else ""
+                novo_responsavel = st.text_input("Responsável:", value=val_resp_default)
+                
+                val_horario_default = str(dados_func['Horário Contrato']).strip() if dados_func is not None else "-"
+                idx_horario = OPCOES_HORARIO.index(val_horario_default) if val_horario_default in OPCOES_HORARIO else 0
+                novo_horario_contrato = st.selectbox("Horário Contrato:", OPCOES_HORARIO, index=idx_horario)
+                
+                sexo_exibido_atual = str(dados_func['Sexo']).strip() if dados_func is not None else "-"
+                idx_sexo = OPCOES_SEXO.index(sexo_exibido_atual) if sexo_exibido_atual in OPCOES_SEXO else 0
+                texto_sexo_selecionado = st.selectbox("Sexo:", OPCOES_SEXO, index=idx_sexo)
+                novo_sexo = MAPA_SEXO_SIGLA.get(texto_sexo_selecionado, "-")
+                
+                motivo_atual = str(dados_func['Motivo']).strip() if dados_func is not None else "-"
+                idx_motivo = OPCOES_MOTIVO.index(motivo_atual) if motivo_atual in OPCOES_MOTIVO else 0
+                novo_motivo = st.selectbox("Motivo:", OPCOES_MOTIVO, index=idx_motivo)
+            else:
+                nova_data_abertura = st.text_input("Data Abertura:", value=str(dados_func['Data Abertura']) if dados_func is not None else "-", disabled=True)
+                novo_responsavel = st.text_input("Responsável:", value=str(dados_func['Responsável']) if dados_func is not None else "-", disabled=True)
+                novo_horario_contrato = st.text_input("Horário Contrato:", value=str(dados_func['Horário Contrato']) if dados_func is not None else "-", disabled=True)
+                novo_sexo_exibido = st.text_input("Sexo:", value=str(dados_func['Sexo']) if dados_func is not None else "-", disabled=True)
+                novo_sexo = MAPA_SEXO_SIGLA.get(novo_sexo_exibido, "-")
+                novo_motivo = st.text_input("Motivo:", value=str(dados_func['Motivo']) if dados_func is not None else "-", disabled=True)
+            
+            st.markdown("🔺 **Recursos Humanos (RH)**")
+            if perfil in ["analista", "rh"]:
+                status_atual = str(dados_func['Status RH']).strip() if dados_func is not None else "-"
+                idx_status = OPCOES_STATUS_RH.index(status_atual) if status_atual in OPCOES_STATUS_RH else 0
+                novo_status_rh = st.selectbox("Status RH:", OPCOES_STATUS_RH, index=idx_status)
+                
+                val_cand_default = str(dados_func['Candidato']) if (dados_func is not None and str(dados_func['Candidato']) != "-") else ""
+                novo_candidato = st.text_input("Candidato:", value=val_cand_default)
+                
+                data_ad_atual = str(dados_func['Data Admissão']).strip() if dados_func is not None else "-"
+                tem_data_anterior = data_ad_atual != "-"
+                
+                definir_data = st.checkbox("Definir data de admissão", value=tem_data_anterior)
+                
+                if definir_data:
+                    try:
+                        data_ad_default = datetime.strptime(data_ad_atual, "%d/%m/%Y").date() if tem_data_anterior else date.today()
+                    except:
+                        data_ad_default = date.today()
+                    nova_data_ad_col = st.date_input("Data Admissão:", value=data_ad_default, format="DD/MM/YYYY")
+                    nova_data_admissao = nova_data_ad_col.strftime("%d/%m/%Y")
+                else:
+                    nova_data_admissao = "-"
+            else:
+                novo_status_rh = st.text_input("Status RH:", value=str(dados_func['Status RH']) if dados_func is not None else "-", disabled=True)
+                novo_candidato = st.text_input("Candidato:", value=str(dados_func['Candidato']) if dados_func is not None else "-", disabled=True)
+                nova_data_admissao = st.text_input("Data Admissão:", value=str(dados_func['Data Admissão']) if dados_func is not None else "-", disabled=True)
+            
+            # Botão de submit do formulário
+            submit_button = st.form_submit_button("💾 Salvar Alterações", use_container_width=True, type="primary")
+
         # =========================================================
         # 🚀 BLOCO DE SALVAMENTO ATUALIZADO (TRAVA COM SPINNER)
         # =========================================================
-        if st.sidebar.button("💾 Salvar Alterações", use_container_width=True):
+        if submit_button:
             if tipo_registro == "Cadastrar Novo / Não Listado" and not colaborador_final:
                 st.sidebar.error("Erro: O nome do colaborador não pode ficar em branco.")
             else:
@@ -664,7 +680,7 @@ try:
                 else:
                     df_filtrado = df_funcao[colunas_selecionadas]
                 
-                # Renderização da Tabela HTML Dinâmica
+                # 🟢 Renderização da Tabela HTML Dinâmica (CORES MODERNAS E ARREDONDADAS)
                 colspan_analista = 4 if modo_visao_global else 3
                 
                 html_tabela = f"""
@@ -672,29 +688,24 @@ try:
 <table class="ql-table">
 <thead>
 <tr>
-<th colspan="{colspan_analista}" style="background-color: #1c3d5a; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: ANALISTA</th>
-<th colspan="1" style="background-color: #d97706; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: SUPERVISOR</th>
-<th colspan="5" style="background-color: #15803d; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: GERENTE</th>
-<th colspan="3" style="background-color: #b91c1c; color: white; text-align: center; font-weight: bold; border-bottom: none;">DONO: RH</th>
+<th colspan="{colspan_analista}" style="background-color: #334155; color: white; text-align: center; font-weight: 600; padding: 8px;">📊 DONO: ANALISTA</th>
+<th colspan="1" style="background-color: #d97706; color: white; text-align: center; font-weight: 600; padding: 8px;">📋 DONO: SUPERVISOR</th>
+<th colspan="5" style="background-color: #047857; color: white; text-align: center; font-weight: 600; padding: 8px;">🏪 DONO: GERENTE</th>
+<th colspan="3" style="background-color: #be123c; color: white; text-align: center; font-weight: 600; padding: 8px;">🤝 DONO: RH</th>
 </tr>
-<tr style="color: #ffffff; font-weight: bold;">
-<th style="background-color: #244e73; border-top: none; text-align: center;">Status</th>
+<tr style="color: #e2e8f0; font-weight: 500;">
+<th style="background-color: #1e293b; border-bottom: 2px solid #475569; text-align: center; padding: 8px;">Status</th>
 """
                 
                 if modo_visao_global:
-                    html_tabela += '<th style="background-color: #244e73; border-top: none; text-align: center;">Loja</th>\n'
+                    html_tabela += '<th style="background-color: #1e293b; border-bottom: 2px solid #475569; text-align: center; padding: 8px;">Loja</th>\n'
                     
-                html_tabela += """<th style="background-color: #244e73; border-top: none; text-align: center;">Nome do Colaborador</th>
-<th style="background-color: #244e73; border-top: none; text-align: center;">Horário Sistema</th>
-<th style="background-color: #b36205; border-top: none; text-align: center;">Observação</th>
-<th style="background-color: #116631; border-top: none; text-align: center;">Data Abertura</th>
-<th style="background-color: #116631; border-top: none; text-align: center;">Responsável</th>
-<th style="background-color: #116631; border-top: none; text-align: center;">Horário Contrato</th>
-<th style="background-color: #116631; border-top: none; text-align: center;">Sexo</th>
-<th style="background-color: #116631; border-top: none; text-align: center;">Motivo</th>
-<th style="background-color: #941616; border-top: none; text-align: center;">Status RH</th>
-<th style="background-color: #941616; border-top: none; text-align: center;">Candidato</th>
-<th style="background-color: #941616; border-top: none; text-align: center;">Data Admissão</th>
+                cabecalhos = ["Nome do Colaborador", "Horário Sistema", "Observação", "Data Abertura", "Responsável", "Horário Contrato", "Sexo", "Motivo", "Status RH", "Candidato", "Data Admissão"]
+
+                for cab in cabecalhos:
+                    html_tabela += f'<th style="background-color: #1e293b; border-bottom: 2px solid #475569; text-align: center; padding: 8px;">{cab}</th>\n'
+                
+                html_tabela += """
 </tr>
 </thead>
 <tbody>
